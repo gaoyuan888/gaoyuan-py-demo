@@ -63,7 +63,7 @@ if __name__ == '__main__':
     samples_size = samples.__len__()
     index_type = 0
     for index_ in range(samples_size):
-        print("处理行id:{}", index_)
+        print("处理行id:", index_)
         if cluster_tuple_list.__len__() == 0:
             cluster_tuple_list.append((index_,))
             index_type = index_type + 1
