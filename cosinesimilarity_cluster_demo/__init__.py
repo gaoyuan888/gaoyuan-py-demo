@@ -93,18 +93,3 @@ if __name__ == '__main__':
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
 
-# print(similarities[2][2])
-
-# print('pairwise sparse output:\n {}\n'.format(np.array(similarities_sparse)))
-# print(type(similarities_sparse))
-# print(type(similarities))
-# staa = np.array(similarities_sparse)
-# array_list = str(np.array(similarities_sparse)).split('\n')
-
-# target = codecs.open("similary.txt", 'w', encoding="utf8")
-# for line_row in similarities:
-#     # print(arr)
-#     for colum in line_row:
-#         target.writelines(colum)
-#
-# target.close()
