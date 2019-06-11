@@ -4,6 +4,7 @@ from keras.preprocessing.text import Tokenizer
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 import operator
+import numpy as np
 # 一、词向量模型
 cn_model = KeyedVectors.load_word2vec_format('sgns.zhihu.bigram', binary=False)
 # import sys
@@ -22,8 +23,12 @@ if __name__ == '__main__':
             samples.append(line[:-1])
             line = f.readline()
 
+    # 4.获得所有tokens的长度
+    num_tokens = [len(tokens) for tokens in samples]
+    num_tokens = np.array(num_tokens)
+    max_tokens = np.mean(num_tokens) + 2 * np.std(num_tokens)
     # 对语料进行one-hot 编码
-    tokenizer = Tokenizer(num_words=100)  # i创建一个分词器（tokenizer），设置为只考虑前1000个最常见的单词
+    tokenizer = Tokenizer(num_words=int(max_tokens))  # i创建一个分词器（tokenizer），设置为只考虑前1000个最常见的单词
     tokenizer.fit_on_texts(samples)  # 构建索引单词
     sequences = tokenizer.texts_to_sequences(samples)  # 将字符串转换为整数索引组成的列表
     one_hot_results = tokenizer.texts_to_matrix(samples, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
@@ -82,7 +87,7 @@ if __name__ == '__main__':
                 cluster_tuple_dict_tmp[cluster_tuple_index] = similarity_num/tup_num
 
             dict_list = sorted(cluster_tuple_dict_tmp.items(), key=operator.itemgetter(1), reverse=True)
-            if dict_list[0][1] > 0.4:
+            if dict_list[0][1] > 0.5:
                 cluster_tuple_list[dict_list[0][0]] = cluster_tuple_list[dict_list[0][0]] + (index_,)
             else:
                 cluster_tuple_list.append((index_,))
