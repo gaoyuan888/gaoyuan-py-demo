@@ -12,9 +12,13 @@ import jieba
 import re
 # 词频统计
 from collections import Counter
-
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
 
 def yuCaozuo(arr1, arr2):
+    # a1 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr1))
+    # a2 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr2))
+    # return list(str(int(a1) & int(a2)))
     l1 = arr2.__len__()
     l2 = arr1.__len__()
     if l1 == 0 or l2 == 0:
@@ -25,8 +29,41 @@ def yuCaozuo(arr1, arr2):
     return res
 
 
-if __name__ == '__main__':
+def huoCaozuo(arr1, arr2):
+    # a1 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr1))
+    # a2 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr2))
+    # return list(str(int(a1) | int(a2)))
+    l1 = arr2.__len__()
+    l2 = arr1.__len__()
+    if l1 == 0 or l2 == 0:
+        return []
+    res = [0] * l1
+    for index in range(l2):
+        res[index] = int(arr1[index]) | int(arr2[index])
+    return res
 
+
+def tf_cluster():
+    cluster_onehot_list = []
+    for cluster in cluster_tuple_list:
+        onehot_sum_list = [0] * one_hot_array[0].__len__()
+        onehot_list = [0] * one_hot_array[0].__len__()
+        onehot_list_bak = one_hot_array[cluster[0][0]]
+        for tuple_list in cluster:
+            onehot_sum_list = np.sum([onehot_sum_list, one_hot_array[tuple_list[0]]], axis=0)
+            onehot_list_bak = yuCaozuo(onehot_list_bak, one_hot_array[tuple_list[0]])
+        for idx in range(one_hot_array[0].__len__()):
+            onehot_list[idx] = 0 if onehot_sum_list[idx] / sum(onehot_sum_list) < 0.1 else 1
+        print(onehot_sum_list)
+        if sum(onehot_list) == 0:
+            cluster_onehot_list.append(onehot_list_bak)
+        else:
+            cluster_onehot_list.append(onehot_list)
+    print(cluster_onehot_list)
+    return cluster_onehot_list
+
+
+if __name__ == '__main__':
     # 分词
     # step 1 读取停用词
     stop_words = []
@@ -91,13 +128,20 @@ if __name__ == '__main__':
     sequences = tokenizer.texts_to_sequences(samples)  # 将字符串转换为整数索引组成的列表
     one_hot_results = tokenizer.texts_to_matrix(samples, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
 
+    # tf-idf 逆向文档概率
+    vectorizer = CountVectorizer()  # 将文本中的词语转换为词频矩阵
+    X = vectorizer.fit_transform(samples)  # 计算词语出现的次数 3x7 sparse matrix
+    transformer = TfidfTransformer()
+    tfidf = transformer.fit_transform(X)  # 将词频矩阵X统计成TF-IDF值
+    print(tfidf.toarray())
+
     # 一、词向量模型
     cn_model = KeyedVectors.load_word2vec_format('sgns.zhihu.bigram', binary=False)
     array_list = one_hot_results.tolist()
     row_index = -1
     for line_row in array_list:
         row_index = row_index + 1
-        # print(row_index)
+        print(row_index)
         column_index = 0
         for value in line_row:
             column_index = column_index + 1
@@ -141,13 +185,13 @@ if __name__ == '__main__':
     one_hot_array = one_hot_results.tolist()
     process_df = codecs.open("process_df.txt", 'w', encoding="utf8")
     for index_ in range(samples_size):
-        cluster_onehot_list = []
-        for cluster in cluster_tuple_list:
-            onehot_sum_list = one_hot_array[cluster[0][0]]
-            for tuple_list in cluster:
-                onehot_sum_list = yuCaozuo(onehot_sum_list, one_hot_array[tuple_list[0]])
-            cluster_onehot_list.append(onehot_sum_list)
-
+        # cluster_onehot_list = []
+        # for cluster in cluster_tuple_list:
+        #     onehot_sum_list = one_hot_array[cluster[0][0]]
+        #     for tuple_list in cluster:
+        #         onehot_sum_list = yuCaozuo(onehot_sum_list, one_hot_array[tuple_list[0]])
+        #     cluster_onehot_list.append(onehot_sum_list)
+        cluster_onehot_list = tf_cluster()
         if cluster_tuple_list.__len__() == 0:
             idx_dep = (index_, second_depart_name_list[index_], cluster_type,)
             type_list = [idx_dep]
