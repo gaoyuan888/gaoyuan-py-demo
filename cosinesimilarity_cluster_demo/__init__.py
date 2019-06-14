@@ -15,6 +15,39 @@ from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
+
+# def tf_cluster():
+#     cluster_onehot_list = []
+#     for cluster in cluster_tuple_list:
+#         onehot_sum_list = [0] * one_hot_array[0].__len__()
+#         onehot_list = [0] * one_hot_array[0].__len__()
+#         onehot_list_bak = one_hot_array[cluster[0][0]]
+#         for tuple_list in cluster:
+#             onehot_sum_list = np.sum([onehot_sum_list, one_hot_array[tuple_list[0]]], axis=0)
+#             onehot_list_bak = yuCaozuo(onehot_list_bak, one_hot_array[tuple_list[0]])
+#         for idx in range(one_hot_array[0].__len__()):
+#             onehot_list[idx] = 0 if onehot_sum_list[idx] / sum(onehot_sum_list) < 0.1 else 1
+#         print(onehot_sum_list)
+#         if sum(onehot_list) == 0:
+#             cluster_onehot_list.append(onehot_list_bak)
+#         else:
+#             cluster_onehot_list.append(onehot_list)
+#     print(cluster_onehot_list)
+#     return cluster_onehot_list
+
+def tf_cluster():
+    cluster_onehot_list = []
+    for cluster in cluster_tuple_list:
+        onehot_sum_list = [0] * one_hot_array[0].__len__()
+        for tuple_list in cluster:
+            t1 = [1 if weight >= 0.2 else 0 for weight in one_hot_array[tuple_list[0]]]
+            onehot_sum_list |= t1
+        print(onehot_sum_list)
+        cluster_onehot_list.append(onehot_sum_list)
+    print(cluster_onehot_list)
+    return cluster_onehot_list
+
+
 def yuCaozuo(arr1, arr2):
     # a1 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr1))
     # a2 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr2))
@@ -43,27 +76,8 @@ def huoCaozuo(arr1, arr2):
     return res
 
 
-def tf_cluster():
-    cluster_onehot_list = []
-    for cluster in cluster_tuple_list:
-        onehot_sum_list = [0] * one_hot_array[0].__len__()
-        onehot_list = [0] * one_hot_array[0].__len__()
-        onehot_list_bak = one_hot_array[cluster[0][0]]
-        for tuple_list in cluster:
-            onehot_sum_list = np.sum([onehot_sum_list, one_hot_array[tuple_list[0]]], axis=0)
-            onehot_list_bak = yuCaozuo(onehot_list_bak, one_hot_array[tuple_list[0]])
-        for idx in range(one_hot_array[0].__len__()):
-            onehot_list[idx] = 0 if onehot_sum_list[idx] / sum(onehot_sum_list) < 0.1 else 1
-        print(onehot_sum_list)
-        if sum(onehot_list) == 0:
-            cluster_onehot_list.append(onehot_list_bak)
-        else:
-            cluster_onehot_list.append(onehot_list)
-    print(cluster_onehot_list)
-    return cluster_onehot_list
-
-
 if __name__ == '__main__':
+
     # 分词
     # step 1 读取停用词
     stop_words = []
@@ -80,7 +94,7 @@ if __name__ == '__main__':
     # df_diag = pd.read_csv('diag.csv', header=1, encoding='utf-8')
 
     df_doctor_info = pd.read_csv('doctor.csv')
-    df_doctor_info = df_doctor_info.loc[0:300]  # 切片
+    df_doctor_info = df_doctor_info.loc[0:10]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     goodat_depart = doc_goodat_list + second_depart_name_list
@@ -127,28 +141,36 @@ if __name__ == '__main__':
     tokenizer.fit_on_texts(samples)  # 构建索引单词
     sequences = tokenizer.texts_to_sequences(samples)  # 将字符串转换为整数索引组成的列表
     one_hot_results = tokenizer.texts_to_matrix(samples, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
+    one_hot_array = one_hot_results.tolist()
+    array_list = one_hot_results.tolist()
 
     # tf-idf 逆向文档概率
     vectorizer = CountVectorizer()  # 将文本中的词语转换为词频矩阵
-    X = vectorizer.fit_transform(samples)  # 计算词语出现的次数 3x7 sparse matrix
     transformer = TfidfTransformer()
+    X = vectorizer.fit_transform(samples)  # 计算词语出现的次数 3x7 sparse matrix
     tfidf = transformer.fit_transform(X)  # 将词频矩阵X统计成TF-IDF值
+    id_word = vectorizer.get_feature_names()  # 获取词袋模型中的所有词语
+    one_hot_array = X.toarray()
+    array_list = X.toarray()
     print(tfidf.toarray())
+    print(id_word[0])
 
     # 一、词向量模型
     cn_model = KeyedVectors.load_word2vec_format('sgns.zhihu.bigram', binary=False)
-    array_list = one_hot_results.tolist()
+
     row_index = -1
     for line_row in array_list:
         row_index = row_index + 1
         print(row_index)
-        column_index = 0
+        # column_index = 0
+        column_index = -1
         for value in line_row:
             column_index = column_index + 1
             if value == 0:
                 # 如果为0，则查找当前行语义最接近的得分补上
                 # 定位当前的词语
-                word = tokenizer.index_word[column_index]
+                # word = tokenizer.index_word[column_index]
+                word = id_word[column_index]
                 # 找到当前行的词语
                 tmp_list = samples[row_index].split(" ")
                 tmp_max_similary_score = 0
@@ -182,7 +204,7 @@ if __name__ == '__main__':
     cluster_tuple_list = []
     cluster_type = 0
     samples_size = samples.__len__()
-    one_hot_array = one_hot_results.tolist()
+
     process_df = codecs.open("process_df.txt", 'w', encoding="utf8")
     for index_ in range(samples_size):
         # cluster_onehot_list = []
@@ -233,17 +255,20 @@ if __name__ == '__main__':
                 arr_clss = []
                 for idx in range(cluster_onehot_list[dict[0]].__len__()):
                     if cluster_onehot_list[dict[0]][idx] == 1:
-                        arr_clss.append(tokenizer.index_word[idx])
+                        # arr_clss.append(tokenizer.index_word[idx])
+                        arr_clss.append(id_word[idx])
                 process_df.writelines("第{}类单词:{}".format(dict[0], arr_clss) + "\n")
                 arr_onehot = []
                 for idx in range(one_hot_array[index_].__len__()):
                     if one_hot_array[index_][idx] == 1:
-                        arr_onehot.append(tokenizer.index_word[idx])
+                        # arr_onehot.append(tokenizer.index_word[idx])
+                        arr_onehot.append(id_word[idx])
                 process_df.writelines("第{}行单词:{}".format(index_, arr_onehot) + "\n")
                 same_word_list = []
                 for idx in range(similar_words.__len__()):
                     if similar_words[idx] == 1:
-                        same_word_list.append(tokenizer.index_word[idx])
+                        # same_word_list.append(tokenizer.index_word[idx])
+                        same_word_list.append(id_word[idx])
                 process_df.writelines("第{}行与第{}类的相似词为:{}".format(index_, dict[0], same_word_list) + "\n")
                 process_df.writelines("===============\n")
 
