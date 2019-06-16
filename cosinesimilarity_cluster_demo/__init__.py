@@ -282,7 +282,7 @@ if __name__ == '__main__':
                         same_word_list.append(corpus_id2word[idx])
                 process_record.writelines("第{}行与第{}类的相似度:{}相似词为:{}".format(index_, current_idx, current_weight, same_word_list) + "\n")
                 same_words_count = same_word_list.__len__()
-                if (current_weight > 0.1 or same_words_count >= 1) and flag:
+                if (current_weight > 0.1 and same_words_count >= 1) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
                     idx_dep = (index_, second_depart_name_list[index_], current_idx,)
