@@ -35,6 +35,14 @@ from sklearn.feature_extraction.text import TfidfTransformer
 #     # print(cluster_onehot_list)
 #     return cluster_onehot_list
 
+def similary_type(cluster_onehot_list, line_idx):
+    cluster_tuple_dict_tmp = {}
+    current_sentence = one_hot_array[line_idx]
+    for cluster_idx in range(cluster_onehot_list.__len__()):
+        similarities = cosine_similarity([current_sentence, cluster_onehot_list[cluster_idx]])
+        cluster_tuple_dict_tmp[cluster_idx] = similarities[0][1]
+    return cluster_tuple_dict_tmp
+
 
 def tf_cluster():
     cluster_onehot_list = []
@@ -153,7 +161,7 @@ if __name__ == '__main__':
     array_list = one_hot_results.toarray()
     print(tfidf.toarray())
     print(sorted(tfidf.data))
-    weight_checked = sorted(tfidf.data)[int(tfidf.data.__len__() * 0.6)]
+    weight_checked = sorted(tfidf.data)[int(tfidf.data.__len__() * 0.5)]
     print(weight_checked)
     print(id_word[0])
 
@@ -225,17 +233,20 @@ if __name__ == '__main__':
             type_list = [idx_dep]
             cluster_tuple_list.append(type_list)
         else:
-            cluster_tuple_dict_tmp = {}
-            for tup_list in cluster_tuple_list:
-                # 遍历元组中的行号
-                similarity_num = 0
-                total_num = 0
-                for tup_index in tup_list:
-                    total_num += 1
-                    if similarities[tup_index[0]][index_] > 0.1:
-                        similarity_num += 1
-                similarity_percent = similarity_num / total_num
-                cluster_tuple_dict_tmp[tup_list[0][2]] = similarity_percent
+            # cluster_tuple_dict_tmp = {}
+            # for tup_list in cluster_tuple_list:
+            #     # 遍历元组中的行号
+            #     similarity_num = 0
+            #     total_num = 0
+            #     for tup_index in tup_list:
+            #         total_num += 1
+            #         if similarities[tup_index[0]][index_] > 0.1:
+            #             similarity_num += 1
+            #     similarity_percent = similarity_num / total_num
+            #     cluster_tuple_dict_tmp[tup_list[0][2]] = similarity_percent
+            # 对比当前行与每一类的相似度，组装相似度
+            cluster_tuple_dict_tmp = similary_type(cluster_onehot_list, index_)
+
             dict_list = sorted(cluster_tuple_dict_tmp.items(), key=operator.itemgetter(1), reverse=True)
             # 判断当前要归类的节点和之前分组是否包含相同的词语，如果包含则加入，如果不包含，则新区分一个分组
             flag = True
@@ -261,8 +272,7 @@ if __name__ == '__main__':
                 process_df.writelines("第{}行与第{}类的相似度:{}相似词为:{}".format(index_, dict[0], dict[1], same_word_list) + "\n")
 
                 same_words_count = same_word_list.__len__()
-                if dict[1] > 0.2 and same_words_count > 0 and flag:
-                    # if dict[1] > 0.5:
+                if (dict[1] > 0.1 or same_words_count >=3) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, dict[0], dict[1]))
                     process_df.writelines("第{}行加入第{}类,相似度:{}".format(index_, dict[0], dict[1]) + "\n")
                     idx_dep = (index_, second_depart_name_list[index_], dict[0],)
