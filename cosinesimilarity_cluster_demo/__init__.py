@@ -15,44 +15,84 @@ from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
+# 语料onehot 编码，已经填充了近义词
+one_hot_array_similar = []
+# 语料onehot 编码，没有组装近义词
+one_hot_array = []
+# 语料的list
+corpus_list = []  # ['种植 牙 牙周病 治疗 修复 及口 内 治疗', '乳腺 肿瘤 及 乳房 整形 领域 的 手术 消化系统 等 常见 肿瘤 的 诊治']
+# 语料的全部分词结果
+corpus_tockens_list = []  # ["种植","牙"]
+# 语料分组 组织一个map 进行分组,存储分类信息
+goodat_cluster_list = []  # [[(0, '\t足踝外科', 0)],[(1, '\t种植科', 1), (2, '\t种植科', 1), (3, '\t种植科', 1)]]
 
-# def tf_cluster():
-#     cluster_onehot_list = []
-#     for cluster in cluster_tuple_list:
-#         onehot_sum_list = [0] * one_hot_array[0].__len__()
-#         onehot_list = [0] * one_hot_array[0].__len__()
-#         onehot_list_bak = one_hot_array[cluster[0][0]]
-#         for tuple_list in cluster:
-#             onehot_sum_list = np.sum([onehot_sum_list, one_hot_array[tuple_list[0]]], axis=0)
-#             onehot_list_bak = yuCaozuo(onehot_list_bak, one_hot_array[tuple_list[0]])
-#         for idx in range(one_hot_array[0].__len__()):
-#             onehot_list[idx] = 0 if onehot_sum_list[idx] / sum(onehot_sum_list) < 0.1 else 1
-#         # print(onehot_sum_list)
-#         if sum(onehot_list) == 0:
-#             cluster_onehot_list.append(onehot_list_bak)
-#         else:
-#             cluster_onehot_list.append(onehot_list)
-#     # print(cluster_onehot_list)
-#     return cluster_onehot_list
-
-def similary_type(cluster_onehot_list, line_idx):
-    cluster_tuple_dict_tmp = {}
-    current_sentence = one_hot_array[line_idx]
-    for cluster_idx in range(cluster_onehot_list.__len__()):
-        similarities = cosine_similarity([current_sentence, cluster_onehot_list[cluster_idx]])
-        cluster_tuple_dict_tmp[cluster_idx] = similarities[0][1]
-    return cluster_tuple_dict_tmp
+# 语料id-word字典
+corpus_id2word = []
+# 句子相似度矩阵
+sentence_similarities_array = []
+# 每一类特征的onehot编码
+feature_onehot_list = []
 
 
-def tf_cluster():
-    cluster_onehot_list = []
-    for cluster in cluster_tuple_list:
-        onehot_sum_list = [0] * tfidf.toarray()[0].__len__()
+def assemble_onehot_similar_array():
+    row_idx = -1
+    for one_hot in one_hot_array_similar:
+        row_idx += 1
+        # column_index = 0
+        column_index = -1
+        for value in one_hot:
+            column_index += 1
+            if value == 0:
+                # 如果为0，则查找当前行语义最接近的得分补上
+                # 定位当前的词语
+                # word = tokenizer.index_word[column_index]
+                word = corpus_id2word[column_index]
+                # 找到当前行的词语
+                tmp_list = corpus_list[row_idx].split(" ")
+                tmp_sum_similary_score = 0
+                tmp_sum_num = 1
+                # 计算分数，找到最大的分数
+                for tmp_word in tmp_list:
+                    try:
+                        tmp_similary_score = cn_model.similarity(word, tmp_word)
+                        if tmp_similary_score > 0.4:
+                            tmp_sum_similary_score += cn_model.similarity(word, tmp_word)
+                            tmp_sum_num += 1
+                    except KeyError:
+                        pass
+                tmp_score = tmp_sum_similary_score / tmp_sum_num
+                if tmp_score > 0.4:
+                    one_hot_array_similar[row_idx][column_index - 1] = tmp_score
+    return one_hot_array_similar
+
+
+def print_similar_array():
+    # 打印相似矩阵到文件
+    similar_df = codecs.open("sentence_similarities_array.txt", 'w', encoding="utf8")
+    for line in sentence_similarities_array:
+        for sim_value in line:
+            similar_df.writelines(str(sim_value) + "  ")
+        similar_df.writelines("\n")
+    similar_df.close()
+
+
+def compute_cluster_similar_dict(feature_onehot_list, current_onehot):
+    cluster_similar_dict = {}
+    for cluster_idx in range(feature_onehot_list.__len__()):
+        sentence_similarities_array = cosine_similarity([current_onehot, feature_onehot_list[cluster_idx]])
+        cluster_similar_dict[cluster_idx] = sentence_similarities_array[0][1]
+    return cluster_similar_dict
+
+
+def assemble_feature_onehot_list():
+    feature_onehot_list = []
+    for cluster in goodat_cluster_list:
+        onehot_sum_list = [0] * tf_idf_weight.toarray()[0].__len__()
         for tuple_list in cluster:
-            t1 = [1 if weight >= 0.255 else 0 for weight in tfidf.toarray()[tuple_list[0]]]
+            t1 = [1 if weight >= 0.255 else 0 for weight in tf_idf_weight.toarray()[tuple_list[0]]]
             onehot_sum_list = huoCaozuo(onehot_sum_list, t1)
-        cluster_onehot_list.append(onehot_sum_list)
-    return cluster_onehot_list
+        feature_onehot_list.append(onehot_sum_list)
+    return feature_onehot_list
 
 
 def yuCaozuo(arr1, arr2):
@@ -122,174 +162,119 @@ if __name__ == '__main__':
     target.close()
 
     # step 3 读取分词后的数据
-    # samples = ['种植 牙 牙周病 治疗 修复 及口 内 治疗', '乳腺 肿瘤 及 乳房 整形 领域 的 手术 消化系统 等 常见 肿瘤 的 诊治']
-    samples = []
-    samples_word_list = []
+
     with open('med.zh.seg.txt', encoding='utf-8') as f:
         line = f.readline()
         while line:
-            samples.append(line[:-1])
+            corpus_list.append(line[:-1])
             line_list = line.split(" ")
             for word in line_list:
-                samples_word_list.append(word.replace("\n", ""))
+                corpus_tockens_list.append(word.replace("\n", ""))
             line = f.readline()
 
     # step 4.获得所有tokens的长度
-    num_tokens_size = [len(tokens) for tokens in samples]
+    num_tokens_size = [len(tokens) for tokens in corpus_list]
     num_tokens_size = np.array(num_tokens_size)
     num_tokens_size = np.mean(num_tokens_size) + 2 * np.std(num_tokens_size)
 
     # step 5 统计词频
-    wd = Counter(samples_word_list)
+    wd = Counter(corpus_tockens_list)
     print(wd.most_common(1000))
 
     # step 6 对语料进行one-hot 编码
     tokenizer = Tokenizer(num_words=int(wd.__len__() * 0.95))  # i创建一个分词器（tokenizer），设置为只考虑前1000个最常见的单词
-    tokenizer.fit_on_texts(samples)  # 构建索引单词
-    sequences = tokenizer.texts_to_sequences(samples)  # 将字符串转换为整数索引组成的列表
-    one_hot_results = tokenizer.texts_to_matrix(samples, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
+    tokenizer.fit_on_texts(corpus_list)  # 构建索引单词
+    sequences = tokenizer.texts_to_sequences(corpus_list)  # 将字符串转换为整数索引组成的列表
+    one_hot_results = tokenizer.texts_to_matrix(corpus_list, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
     one_hot_array = one_hot_results.tolist()
     array_list = one_hot_results.tolist()
 
     # tf-idf 逆向文档概率
     vectorizer = CountVectorizer()  # 将文本中的词语转换为词频矩阵
     transformer = TfidfTransformer()
-    one_hot_results = vectorizer.fit_transform(samples)  # 计算词语出现的次数 3x7 sparse matrix
-    tfidf = transformer.fit_transform(one_hot_results)  # 将词频矩阵X统计成TF-IDF值
-    id_word = vectorizer.get_feature_names()  # 获取词袋模型中的所有词语
+    one_hot_results = vectorizer.fit_transform(corpus_list)  # 计算词语出现的次数 3x7 sparse matrix
+    tf_idf_weight = transformer.fit_transform(one_hot_results)  # 将词频矩阵X统计成TF-IDF值
+    corpus_id2word = vectorizer.get_feature_names()  # 获取词袋模型中的所有词语
     one_hot_array = one_hot_results.toarray()
-    array_list = one_hot_results.toarray()
-    print(tfidf.toarray())
-    print(sorted(tfidf.data))
-    weight_checked = sorted(tfidf.data)[int(tfidf.data.__len__() * 0.5)]
+    one_hot_array_similar = one_hot_results.toarray()
+    print(tf_idf_weight.toarray())
+    print(sorted(tf_idf_weight.data))
+    weight_checked = sorted(tf_idf_weight.data)[int(tf_idf_weight.data.__len__() * 0.5)]
     print(weight_checked)
-    print(id_word[0])
+    print(corpus_id2word[0])
 
     # 一、词向量模型
     cn_model = KeyedVectors.load_word2vec_format('sgns.zhihu.bigram', binary=False)
 
-    row_index = -1
-    for line_row in array_list:
-        row_index = row_index + 1
-        print(row_index)
-        # column_index = 0
-        column_index = -1
-        for value in line_row:
-            column_index = column_index + 1
-            if value == 0:
-                # 如果为0，则查找当前行语义最接近的得分补上
-                # 定位当前的词语
-                # word = tokenizer.index_word[column_index]
-                word = id_word[column_index]
-                # 找到当前行的词语
-                tmp_list = samples[row_index].split(" ")
-                tmp_sum_similary_score = 0
-                tmp_sum_num = 1
-                # 计算分数，找到最大的分数
-                for tmp_word in tmp_list:
-                    try:
-                        tmp_similary_score = cn_model.similarity(word, tmp_word)
-                        if tmp_similary_score > 0.4:
-                            tmp_sum_similary_score += cn_model.similarity(word, tmp_word)
-                            tmp_sum_num += 1
-                    except KeyError:
-                        pass
-                tmp_score = tmp_sum_similary_score / tmp_sum_num
-                if tmp_score > 0.4:
-                    array_list[row_index][column_index - 1] = tmp_score
+    # 将每一行onehot编码按照词语之间的相似度进行赋值
+    one_hot_array_similar = assemble_onehot_similar_array()
 
     # 计算矩阵余弦相似度
-    A_sparse = sparse.csr_matrix(array_list)
-    similarities = cosine_similarity(A_sparse)
+    A_sparse = sparse.csr_matrix(one_hot_array_similar)
+    sentence_similarities_array = cosine_similarity(A_sparse)
+    # 打印相似矩阵到文件
+    print_similar_array()
 
     # 计算one-hot编码的余弦相似度
     A_sparse_onehot = sparse.csr_matrix(one_hot_array)
     similarities_onehot = cosine_similarity(A_sparse_onehot)
 
-    # 打印相似矩阵到文件
-    similar_df = codecs.open("similarities.txt", 'w', encoding="utf8")
-    for line in similarities:
-        for sim_value in line:
-            similar_df.writelines(str(sim_value) + "  ")
-        similar_df.writelines("\n")
-    similar_df.close()
-
-    # 组织一个map 进行分组
-    cluster_tuple_list = []
-    cluster_type = 0
-    samples_size = samples.__len__()
-
-    process_df = codecs.open("process_df.txt", 'w', encoding="utf8")
-    for index_ in range(samples_size):
-        # cluster_onehot_list = []
-        # for cluster in cluster_tuple_list:
-        #     onehot_sum_list = one_hot_array[cluster[0][0]]
-        #     for tuple_list in cluster:
-        #         onehot_sum_list = yuCaozuo(onehot_sum_list, one_hot_array[tuple_list[0]])
-        #     cluster_onehot_list.append(onehot_sum_list)
-        cluster_onehot_list = tf_cluster()
-        if cluster_tuple_list.__len__() == 0:
-            idx_dep = (index_, second_depart_name_list[index_], cluster_type,)
-            type_list = [idx_dep]
-            cluster_tuple_list.append(type_list)
+    cluster_idx = 0
+    corpus_size = corpus_list.__len__()
+    process_record = codecs.open("process_record.txt", 'w', encoding="utf8")
+    for index_ in range(corpus_size):
+        if goodat_cluster_list.__len__() == 0:
+            goodat_cluster_list.append([(index_, second_depart_name_list[index_], cluster_idx,)])
         else:
-            # cluster_tuple_dict_tmp = {}
-            # for tup_list in cluster_tuple_list:
-            #     # 遍历元组中的行号
-            #     similarity_num = 0
-            #     total_num = 0
-            #     for tup_index in tup_list:
-            #         total_num += 1
-            #         if similarities[tup_index[0]][index_] > 0.1:
-            #             similarity_num += 1
-            #     similarity_percent = similarity_num / total_num
-            #     cluster_tuple_dict_tmp[tup_list[0][2]] = similarity_percent
-            # 对比当前行与每一类的相似度，组装相似度
-            cluster_tuple_dict_tmp = similary_type(cluster_onehot_list, index_)
-
-            dict_list = sorted(cluster_tuple_dict_tmp.items(), key=operator.itemgetter(1), reverse=True)
+            # 组装每一类特征词语的onehot编码
+            feature_onehot_list = assemble_feature_onehot_list()
+            # 计算当前行与每一类的相似度
+            cluster_similar_dict = compute_cluster_similar_dict(feature_onehot_list, one_hot_array[index_])
+            # 对dict排序
+            cluster_similar_dict = sorted(cluster_similar_dict.items(), key=operator.itemgetter(1), reverse=True)
             # 判断当前要归类的节点和之前分组是否包含相同的词语，如果包含则加入，如果不包含，则新区分一个分组
             flag = True
-            for dict in dict_list:
-                similar_words = yuCaozuo(cluster_onehot_list[dict[0]], one_hot_array[index_])
+            for cluster_similar in cluster_similar_dict:
+                cluster_idx = cluster_similar[0]  # 每一类id
+                cluster_weight = cluster_similar[1]  # 每一类的相似度weight
+                similar_words = yuCaozuo(feature_onehot_list[cluster_idx], one_hot_array[index_])
                 arr_clss = []
-                for idx in range(cluster_onehot_list[dict[0]].__len__()):
-                    if cluster_onehot_list[dict[0]][idx] == 1:
+                for idx in range(feature_onehot_list[cluster_idx].__len__()):
+                    if feature_onehot_list[cluster_idx][idx] != 0:
                         # arr_clss.append(tokenizer.index_word[idx])
-                        arr_clss.append(id_word[idx])
-                process_df.writelines("第{}类单词:{}".format(dict[0], arr_clss) + "\n")
+                        arr_clss.append(corpus_id2word[idx])
+                process_record.writelines("第{}类单词:{}".format(cluster_idx, arr_clss) + "\n")
                 arr_onehot = []
                 for idx in range(one_hot_array[index_].__len__()):
-                    if one_hot_array[index_][idx] == 1:
+                    if one_hot_array[index_][idx] != 0:
                         # arr_onehot.append(tokenizer.index_word[idx])
-                        arr_onehot.append(id_word[idx])
-                process_df.writelines("第{}行单词:{}".format(index_, arr_onehot) + "\n")
+                        arr_onehot.append(corpus_id2word[idx])
+                process_record.writelines("第{}行单词:{}".format(index_, arr_onehot) + "\n")
                 same_word_list = []
                 for idx in range(similar_words.__len__()):
-                    if similar_words[idx] == 1:
+                    if similar_words[idx] != 0:
                         # same_word_list.append(tokenizer.index_word[idx])
-                        same_word_list.append(id_word[idx])
-                process_df.writelines("第{}行与第{}类的相似度:{}相似词为:{}".format(index_, dict[0], dict[1], same_word_list) + "\n")
-
+                        same_word_list.append(corpus_id2word[idx])
+                process_record.writelines(
+                    "第{}行与第{}类的相似度:{}相似词为:{}".format(index_, cluster_idx, cluster_weight, same_word_list) + "\n")
                 same_words_count = same_word_list.__len__()
-                if (dict[1] > 0.1 or same_words_count >=3) and flag:
-                    print("第{}行加入第{}类,相似度:{}".format(index_, dict[0], dict[1]))
-                    process_df.writelines("第{}行加入第{}类,相似度:{}".format(index_, dict[0], dict[1]) + "\n")
-                    idx_dep = (index_, second_depart_name_list[index_], dict[0],)
-                    cluster_tuple_list[dict[0]].append(idx_dep)
+                if (cluster_weight > 0.1 or same_words_count >= 1) and flag:
+                    print("第{}行加入第{}类,相似度:{}".format(index_, cluster_idx, cluster_weight))
+                    process_record.writelines("第{}行加入第{}类,相似度:{}".format(index_, cluster_idx, cluster_weight) + "\n")
+                    idx_dep = (index_, second_depart_name_list[index_], cluster_idx,)
+                    goodat_cluster_list[cluster_idx].append(idx_dep)
                     flag = False
-                    # break
-                process_df.writelines("===============\n")
+                process_record.writelines("===============\n")
             if flag:
-                cluster_type += 1
-                idx_dep = (index_, second_depart_name_list[index_], cluster_type,)
+                cluster_idx += 1
+                idx_dep = (index_, second_depart_name_list[index_], cluster_idx,)
                 type_list = [idx_dep]
-                cluster_tuple_list.append(type_list)
-                print("第{}行，新增第{}类".format(index_, dict[0]))
-                process_df.writelines("第{}行，新增第{}类".format(index_, cluster_type) + "\n")
-                process_df.writelines("===============\n")
-    process_df.close()
-    print(cluster_tuple_list)
+                goodat_cluster_list.append(type_list)
+                print("第{}行，新增第{}类".format(index_, cluster_idx))
+                process_record.writelines("第{}行，新增第{}类".format(index_, cluster_idx) + "\n")
+                process_record.writelines("===============\n")
+    process_record.close()
+    print(goodat_cluster_list)
 
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
