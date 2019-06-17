@@ -35,11 +35,33 @@ sentence_similarities_array = []
 # 每一类特征的onehot编码
 feature_onehot_list = []
 
+# 医生id和类别对应字典
+docid_class_dict = {}
+
+regstr = "[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+|[a-zA-Z0-9_]+"
+
+
+class GoodAtCluster:
+    def __init__(self, line_id, second_depart_name, cluster_idx, doctor_id):
+        self.line_id = line_id
+        self.second_depart_name = second_depart_name
+        self.cluster_idx = cluster_idx
+        self.doctor_id = doctor_id
+
+    def __str__(self):
+        return "line_id:{},second_depart_name:{},current_idx:{},doctor_id:{}".format(self.line_id,
+                                                                                     "'" + self.second_depart_name + "'",
+                                                                                     self.cluster_idx,
+                                                                                     self.doctor_id).replace(" ",
+                                                                                                             "").replace(
+            "\t", "")
+
 
 def assemble_onehot_similar_array():
     row_idx = -1
     for one_hot in one_hot_array_similar:
         row_idx += 1
+        print(row_idx)
         # column_index = 0
         column_index = -1
         for value in one_hot:
@@ -104,7 +126,7 @@ def assemble_feature_onehot_list():
     for cluster in goodat_cluster_list:
         feature_words_list = []
         for tuple_list in cluster:
-            feature_words_list += corpus_list[tuple_list[0]].split(" ")
+            feature_words_list += corpus_list[tuple_list.line_id].split(" ")
         # 计算词频，取前百分之40的词频
         wd = Counter(feature_words_list)
         feature_words_list = wd.most_common(int(wd.__len__() * 0.4))
@@ -147,6 +169,53 @@ def huoCaozuo(arr1, arr2):
     return res
 
 
+def print_goodat_cluster():
+    goodat_cluster_write = codecs.open("goodat_cluster.txt", 'w', encoding="utf8")
+    goodat_cluster_write.writelines("[")
+    for goodat_cluster in goodat_cluster_list:
+        cluster_str = "["
+        for cluster in goodat_cluster:
+            cluster_str = cluster_str + "{" + cluster.__str__() + "},"
+        goodat_cluster_write.writelines(cluster_str + "],\n")
+    goodat_cluster_write.writelines("]")
+    goodat_cluster_write.close()
+
+
+# 打印出医生id和类别的结果  {176910113695:0,174910080032:1,}
+def print_docid_class_dict():
+    docid_class_write = codecs.open("docid_class_write.txt", 'w', encoding="utf8")
+    docid_class_write.writelines("{")
+    for goodat_cluster in goodat_cluster_list:
+        cluster_str = ""
+        for cluster in goodat_cluster:
+            docid_class_dict[cluster.doctor_id] = cluster.cluster_idx
+            cluster_str = cluster_str + str(cluster.doctor_id) + ":" + str(cluster.cluster_idx) + ","
+        docid_class_write.writelines(cluster_str + "\n")
+    docid_class_write.writelines("}")
+    docid_class_write.close()
+
+
+# 按照聚类结果，将问诊信息归类
+def diaginfo_classification():
+    diag_info = pd.read_csv('diag.csv')
+    disease_desc_list = diag_info['disease_desc'].values
+    doctor_id_list = diag_info['doctor_id'].values
+    diaginfo_class_write = codecs.open("diaginfo_class_write.txt", 'w', encoding="utf8")
+    for line_idx in range(doctor_id_list.__len__()):
+        disease_desc = disease_desc_list[line_idx]
+        disease_desc = re.sub(regstr, "", disease_desc)
+        if disease_desc is not None and disease_desc != "":
+            class_ = None
+            try:
+                class_ = docid_class_dict[doctor_id_list[line_idx]]
+            except KeyError:
+                pass
+            if class_ is not None:
+                desc_class = str(class_) + "," + str(doctor_id_list[line_idx]) + "," + disease_desc + "\n"
+                diaginfo_class_write.writelines(desc_class)
+    diaginfo_class_write.close()
+
+
 if __name__ == '__main__':
 
     # 分词
@@ -168,14 +237,15 @@ if __name__ == '__main__':
     df_doctor_info = df_doctor_info.loc[0:200]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
-    goodat_depart = doc_goodat_list + second_depart_name_list
+    doc_id_list = df_doctor_info['doc_id'].values
+    goodat_depart = doc_goodat_list + second_depart_name_list + second_depart_name_list
 
     target = codecs.open("med.zh.seg.txt", 'w', encoding="utf8")
     line_num = 1
     for line in goodat_depart:
         line_num = line_num + 1
         # print('---- processing ', line_num, ' article----------------')
-        line = re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", line)
+        line = re.sub(regstr, "", line)
         raw_sentence = []
         raw_words = list(jieba.cut(line))
         for word in raw_words:
@@ -249,7 +319,8 @@ if __name__ == '__main__':
     process_record = codecs.open("process_record.txt", 'w', encoding="utf8")
     for index_ in range(corpus_size):
         if goodat_cluster_list.__len__() == 0:
-            goodat_cluster_list.append([(index_, second_depart_name_list[index_], cluster_idx,)])
+            goodat_cluster_list.append(
+                [GoodAtCluster(index_, second_depart_name_list[index_], cluster_idx, doc_id_list[index_], )])
         else:
             # 组装每一类特征词语的onehot编码
             feature_onehot_list = assemble_feature_onehot_list()
@@ -280,23 +351,39 @@ if __name__ == '__main__':
                     if similar_words[idx] != 0:
                         # same_word_list.append(tokenizer.index_word[idx])
                         same_word_list.append(corpus_id2word[idx])
-                process_record.writelines("第{}行与第{}类的相似度:{}相似词为:{}".format(index_, current_idx, current_weight, same_word_list) + "\n")
+                process_record.writelines(
+                    "第{}行与第{}类的相似度:{}相似词为:{}".format(index_, current_idx, current_weight, same_word_list) + "\n")
                 same_words_count = same_word_list.__len__()
-                if (current_weight > 0.1 and same_words_count >= 1) and flag:
+                if (current_weight > 0.2 or same_words_count >= 1) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
-                    idx_dep = (index_, second_depart_name_list[index_], current_idx,)
-                    goodat_cluster_list[current_idx].append(idx_dep)
+                    goodat_cluster_list[current_idx].append(
+                        GoodAtCluster(index_, second_depart_name_list[index_], current_idx, doc_id_list[index_]))
+
+                    # (index_, second_depart_name_list[index_], current_idx, doc_id_list[index_],)
                     flag = False
                 process_record.writelines("===============\n")
             if flag:
                 cluster_idx += 1
-                goodat_cluster_list.append([(index_, second_depart_name_list[index_], cluster_idx,)])
+                goodat_cluster_list.append(
+                    [GoodAtCluster(index_, second_depart_name_list[index_], cluster_idx, doc_id_list[index_])])
+                # [(index_, second_depart_name_list[index_], cluster_idx, doc_id_list[index_],)]
                 print("第{}行，新增第{}类".format(index_, cluster_idx))
                 process_record.writelines("第{}行，新增第{}类".format(index_, cluster_idx) + "\n")
                 process_record.writelines("===============\n")
     process_record.close()
+
+    # 打印聚类结果
     print(goodat_cluster_list)
+    print_goodat_cluster()
+    print("第一阶段：按照医生擅长聚类完毕！")
+
+    print("按照医生id作为key,类别作为value组装字段")
+    print_docid_class_dict()
+
+    print("开始第二阶段：将问诊信息分类赋值")
+    # 按照聚类结果将diag.csv 问诊信息进行分类
+    diaginfo_classification()
 
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
