@@ -197,23 +197,37 @@ def print_docid_class_dict():
 
 # 按照聚类结果，将问诊信息归类
 def diaginfo_classification():
-    diag_info = pd.read_csv('diag.csv')
+    diag_info = pd.read_csv('data/diag.csv')
     disease_desc_list = diag_info['disease_desc'].values
     doctor_id_list = diag_info['doctor_id'].values
-    diaginfo_class_write = codecs.open("diaginfo_class_write.txt", 'w', encoding="utf8")
+    write_ = codecs.open("diag_class_write.txt", 'w', encoding="utf8")
+    write_.writelines("class,doctor_id,disease_desc\n")
     for line_idx in range(doctor_id_list.__len__()):
         disease_desc = disease_desc_list[line_idx]
         disease_desc = re.sub(regstr, "", disease_desc)
         if disease_desc is not None and disease_desc != "":
-            class_ = None
-            try:
+            if docid_class_dict.__contains__(doctor_id_list[line_idx]):
                 class_ = docid_class_dict[doctor_id_list[line_idx]]
-            except KeyError:
-                pass
-            if class_ is not None:
                 desc_class = str(class_) + "," + str(doctor_id_list[line_idx]) + "," + disease_desc + "\n"
-                diaginfo_class_write.writelines(desc_class)
-    diaginfo_class_write.close()
+                write_.writelines(desc_class)
+    write_.close()
+
+
+# 统计问诊种类-总数的关系
+def statistic_diagclass_total():
+    diaginfo_class = pd.read_csv('diag_class_write.txt')
+    diaginfo_class_list = diaginfo_class['class'].values
+    class_total_dict = {}
+    for class_ in diaginfo_class_list:
+        if class_total_dict.__contains__(class_):
+            class_total_dict[class_] = class_total_dict[class_] + 1
+        else:
+            class_total_dict[class_] = 1
+    write_ = codecs.open("statistic_diagclass_total_write.txt", 'w', encoding="utf8")
+    write_.writelines("class,total\n")
+    for key, values in class_total_dict.items():
+        write_.writelines(str(key) + "," + str(values) + "\n")
+    write_.close()
 
 
 if __name__ == '__main__':
@@ -221,7 +235,7 @@ if __name__ == '__main__':
     # 分词
     # step 1 读取停用词
     stop_words = []
-    with open('stop_words.txt', encoding='utf-8') as f:
+    with open('data/stop_words.txt', encoding='utf-8') as f:
         line = f.readline()
         while line:
             stop_words.append(line[:-1])
@@ -233,7 +247,7 @@ if __name__ == '__main__':
     print('open files')
     # df_diag = pd.read_csv('diag.csv', header=1, encoding='utf-8')
 
-    df_doctor_info = pd.read_csv('doctor.csv')
+    df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.loc[0:200]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
@@ -256,7 +270,6 @@ if __name__ == '__main__':
     target.close()
 
     # step 3 读取分词后的数据
-
     with open('med.zh.seg.txt', encoding='utf-8') as f:
         line = f.readline()
         while line:
@@ -299,7 +312,7 @@ if __name__ == '__main__':
     print(corpus_id2word[0])
 
     # 一、词向量模型
-    cn_model = KeyedVectors.load_word2vec_format('sgns.zhihu.bigram', binary=False)
+    cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
 
     # 将每一行onehot编码按照词语之间的相似度进行赋值
     one_hot_array_similar = assemble_onehot_similar_array()
@@ -384,6 +397,9 @@ if __name__ == '__main__':
     print("开始第二阶段：将问诊信息分类赋值")
     # 按照聚类结果将diag.csv 问诊信息进行分类
     diaginfo_classification()
+
+    print("将问诊语料各类的条数进行统计，保证各类的语料不倾斜。")
+    statistic_diagclass_total()
 
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
