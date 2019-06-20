@@ -200,7 +200,7 @@ def diaginfo_classification():
     diag_info = pd.read_csv('data/diag.csv')
     disease_desc_list = diag_info['disease_desc'].values
     doctor_id_list = diag_info['doctor_id'].values
-    write_ = codecs.open("diag_class_write.txt", 'w', encoding="utf8")
+    write_ = codecs.open("diag_corpus_write.txt", 'w', encoding="utf8")
     write_.writelines("class,doctor_id,disease_desc\n")
     for line_idx in range(doctor_id_list.__len__()):
         disease_desc = disease_desc_list[line_idx]
@@ -215,7 +215,7 @@ def diaginfo_classification():
 
 # 统计问诊种类-总数的关系
 def statistic_diagclass_total():
-    diaginfo_class = pd.read_csv('diag_class_write.txt')
+    diaginfo_class = pd.read_csv('diag_corpus_write.txt')
     diaginfo_class_list = diaginfo_class['class'].values
     class_total_dict = {}
     for class_ in diaginfo_class_list:
@@ -223,10 +223,35 @@ def statistic_diagclass_total():
             class_total_dict[class_] = class_total_dict[class_] + 1
         else:
             class_total_dict[class_] = 1
-    write_ = codecs.open("statistic_diagclass_total_write.txt", 'w', encoding="utf8")
+    class_total_dict = sorted(class_total_dict.items(), key=operator.itemgetter(1), reverse=True)
+    write_ = codecs.open("diagclass_total_write.txt", 'w', encoding="utf8")
     write_.writelines("class,total\n")
-    for key, values in class_total_dict.items():
-        write_.writelines(str(key) + "," + str(values) + "\n")
+    for tuple_ in class_total_dict:
+        write_.writelines(str(tuple_[0]) + "," + str(tuple_[1]) + "\n")
+    write_.close()
+
+
+# 按照diagclass_total_write的结果统计每类的结果
+def assemble_train_corpus():
+    diagclass_total = pd.read_csv('diagclass_total_write.txt')
+    diagclass_total_list = diagclass_total['total'].values
+    corpus_class_size = diagclass_total_list[int(diagclass_total_list.__len__() * 0.6) + 1]
+    print("每一类的最大个数为:{}".format(corpus_class_size))
+    diag_corpus = pd.read_csv('diag_corpus_write.txt')
+    class_ = diag_corpus["class"]
+    doctor_id = diag_corpus["doctor_id"]
+    disease_desc = diag_corpus["disease_desc"]
+    write_ = codecs.open("train_corpus_write.txt", 'w', encoding="utf8")
+    write_.writelines("class,doctor_id,disease_desc\n")
+    type_total_dict = {}
+    for index in range(diag_corpus.__len__()):
+        if type_total_dict.__contains__(class_[index]):
+            type_total_dict[class_[index]] = type_total_dict[class_[index]] + 1
+        else:
+            type_total_dict[class_[index]] = 1
+        if type_total_dict[class_[index]] < corpus_class_size:
+            # print(diag_corpus[index])
+            write_.writelines(str(class_[index]) + "," + str(doctor_id[index]) + "," + str(disease_desc[index]) + "\n")
     write_.close()
 
 
@@ -400,6 +425,9 @@ if __name__ == '__main__':
 
     print("将问诊语料各类的条数进行统计，保证各类的语料不倾斜。")
     statistic_diagclass_total()
+
+    print("按照上面统计结果，组装训练所需要的语料")
+    assemble_train_corpus()
 
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
