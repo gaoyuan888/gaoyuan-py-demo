@@ -28,13 +28,12 @@ goodat_cluster_list = []  # [[(0, '\t足踝外科', 0)],[(1, '\t种植科', 1), 
 
 # 语料id-word字典
 corpus_id2word = []
-
 corpus_word2id = []
+
 # 句子相似度矩阵
-sentence_similarities_array = []
+sentence_similar_array = []
 # 每一类特征的onehot编码
 feature_onehot_list = []
-
 # 医生id和类别对应字典
 docid_class_dict = {}
 
@@ -92,8 +91,8 @@ def assemble_onehot_similar_array():
 
 def print_similar_array():
     # 打印相似矩阵到文件
-    similar_df = codecs.open("sentence_similarities_array.txt", 'w', encoding="utf8")
-    for line in sentence_similarities_array:
+    similar_df = codecs.open("sentence_similar_array.txt", 'w', encoding="utf8")
+    for line in sentence_similar_array:
         for sim_value in line:
             similar_df.writelines(str(sim_value) + "  ")
         similar_df.writelines("\n")
@@ -103,8 +102,8 @@ def print_similar_array():
 def compute_cluster_similar_dict(feature_onehot_list, current_onehot):
     cluster_similar_dict = {}
     for cluster_idx in range(feature_onehot_list.__len__()):
-        sentence_similarities_array = cosine_similarity([current_onehot, feature_onehot_list[cluster_idx]])
-        cluster_similar_dict[cluster_idx] = sentence_similarities_array[0][1]
+        sentence_similar_array = cosine_similarity([current_onehot, feature_onehot_list[cluster_idx]])
+        cluster_similar_dict[cluster_idx] = sentence_similar_array[0][1]
     return cluster_similar_dict
 
 
@@ -114,7 +113,7 @@ def compute_cluster_similar_dict(feature_onehot_list, current_onehot):
 #     for cluster in goodat_cluster_list:
 #         onehot_sum_list = [0] * tf_idf_weight.toarray()[0].__len__()
 #         for tuple_list in cluster:
-#             t1 = [1 if weight >= tfidf_weight_checked else 0 for weight in tf_idf_weight.toarray()[tuple_list[0]]]
+#             t1 = [1 if weight >= tfidf_weight_checkpoint else 0 for weight in tf_idf_weight.toarray()[tuple_list[0]]]
 #             onehot_sum_list = huoCaozuo(onehot_sum_list, t1)
 #         feature_onehot_list.append(onehot_sum_list)
 #     return feature_onehot_list
@@ -255,8 +254,8 @@ def assemble_train_corpus():
     write_.close()
 
 
-if __name__ == '__main__':
-
+# 读取停用词
+def read_stop_words():
     # 分词
     # step 1 读取停用词
     stop_words = []
@@ -266,19 +265,20 @@ if __name__ == '__main__':
             stop_words.append(line[:-1])
             line = f.readline()
     stop_words = set(stop_words)
-    print('停用词读取完毕，共{n}个单词'.format(n=len(stop_words)))
+    return stop_words
 
-    # step 2 读取语料
-    print('open files')
-    # df_diag = pd.read_csv('diag.csv', header=1, encoding='utf-8')
 
+def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.loc[0:200]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     doc_id_list = df_doctor_info['doc_id'].values
     goodat_depart = doc_goodat_list + second_depart_name_list + second_depart_name_list
+    return doc_goodat_list, second_depart_name_list, doc_id_list, goodat_depart
 
+
+def write_doc_goodat_tokens(goodat_depart):
     target = codecs.open("med.zh.seg.txt", 'w', encoding="utf8")
     line_num = 1
     for line in goodat_depart:
@@ -294,7 +294,9 @@ if __name__ == '__main__':
         target.writelines(line_seg + "\n")
     target.close()
 
-    # step 3 读取分词后的数据
+
+def read_doc_goodat_tokens():
+    corpus_tockens_list = []
     with open('med.zh.seg.txt', encoding='utf-8') as f:
         line = f.readline()
         while line:
@@ -303,24 +305,41 @@ if __name__ == '__main__':
             for word in line_list:
                 corpus_tockens_list.append(word.replace("\n", ""))
             line = f.readline()
+    return corpus_tockens_list, corpus_list
 
-    # step 4.获得所有tokens的长度
-    num_tokens_size = [len(tokens) for tokens in corpus_list]
-    num_tokens_size = np.array(num_tokens_size)
-    num_tokens_size = np.mean(num_tokens_size) + 2 * np.std(num_tokens_size)
+
+if __name__ == '__main__':
+
+    # 分词
+    # step 1 读取停用词
+    stop_words = read_stop_words()
+    print('停用词读取完毕，共{n}个单词'.format(n=len(stop_words)))
+
+    # step 2 读取语料
+    print('读取医生擅长数据，准备聚类。。。')
+    doc_goodat_list, second_depart_name_list, doc_id_list, goodat_depart = read_doctor_corpus()
+
+    print("打印医生擅长语料分词结果，生成中间文件：med.zh.seg.txt")
+    write_doc_goodat_tokens(goodat_depart)
+
+    # step 3 读取分词后的数据
+    print("读取医生擅长语料分词结果,组装成一个大数组，用于后续词频统计等")
+    corpus_tockens_list, corpus_list = read_doc_goodat_tokens()
 
     # step 5 统计词频
+    print("开始统计词频")
     wd = Counter(corpus_tockens_list)
-    print(wd.most_common(1000))
+    # print(wd.most_common(1000)) # 打印前1000个词
 
     # step 6 对语料进行one-hot 编码
-    tokenizer = Tokenizer(num_words=int(wd.__len__() * 0.95))  # i创建一个分词器（tokenizer），设置为只考虑前1000个最常见的单词
-    tokenizer.fit_on_texts(corpus_list)  # 构建索引单词
-    sequences = tokenizer.texts_to_sequences(corpus_list)  # 将字符串转换为整数索引组成的列表
-    one_hot_results = tokenizer.texts_to_matrix(corpus_list, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
-    one_hot_array = one_hot_results.tolist()
-    array_list = one_hot_results.tolist()
+    # tokenizer = Tokenizer(num_words=int(wd.__len__() * 0.95))  # i创建一个分词器（tokenizer），设置为只考虑前1000个最常见的单词
+    # tokenizer.fit_on_texts(corpus_list)  # 构建索引单词
+    # sequences = tokenizer.texts_to_sequences(corpus_list)  # 将字符串转换为整数索引组成的列表
+    # one_hot_results = tokenizer.texts_to_matrix(corpus_list, mode='binary')  # 可以直接得到one-hot二进制表示。这个分词器也支持除
+    # one_hot_array = one_hot_results.tolist()
+    # array_list = one_hot_results.tolist()
 
+    print("进行词频统计相关，组装onehot编码,id-word,tf-idf词频矩阵")
     # tf-idf 逆向文档概率
     vectorizer = CountVectorizer()  # 将文本中的词语转换为词频矩阵
     transformer = TfidfTransformer()
@@ -330,28 +349,33 @@ if __name__ == '__main__':
     tf_idf_weight = transformer.fit_transform(one_hot_results)  # 将词频矩阵X统计成TF-IDF值
     corpus_id2word = vectorizer.get_feature_names()  # 获取词袋模型中的所有词语
     corpus_word2id = vectorizer.vocabulary_
-    print(tf_idf_weight.toarray())
-    print(sorted(tf_idf_weight.data))
-    tfidf_weight_checked = sorted(tf_idf_weight.data)[int(tf_idf_weight.data.__len__() * 0.5)]
-    print(tfidf_weight_checked)
-    print(corpus_id2word[0])
+    tfidf_weight_checkpoint = sorted(tf_idf_weight.data)[int(tf_idf_weight.data.__len__() * 0.5)]
+    # print(tfidf_weight_checkpoint)
+    # print(corpus_id2word[0])
+    # print(tf_idf_weight.toarray())
+    # print(sorted(tf_idf_weight.data))
 
     # 一、词向量模型
+    print("加载词频矩阵")
     cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
 
     # 将每一行onehot编码按照词语之间的相似度进行赋值
+    print("根据句子onehot相似矩阵，计算句子之间的相似度，这个过程比较费时")
     one_hot_array_similar = assemble_onehot_similar_array()
-
     # 计算矩阵余弦相似度
     A_sparse = sparse.csr_matrix(one_hot_array_similar)
-    sentence_similarities_array = cosine_similarity(A_sparse)
+    sentence_similar_array = cosine_similarity(A_sparse)
+
     # 打印相似矩阵到文件
     print_similar_array()
 
+    print("根据句子onehot矩阵，计算句子之间的相似度")
     # 计算one-hot编码的余弦相似度
     A_sparse_onehot = sparse.csr_matrix(one_hot_array)
     similarities_onehot = cosine_similarity(A_sparse_onehot)
 
+    print("开始文本聚类，打印聚类执行过程")
+    # write_cluster_process()
     cluster_idx = 0
     corpus_size = corpus_list.__len__()
     process_record = codecs.open("process_record.txt", 'w', encoding="utf8")
