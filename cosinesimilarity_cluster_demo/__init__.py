@@ -332,7 +332,7 @@ def read_doctor_corpus():
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     doc_id_list = df_doctor_info['doc_id'].values
-    goodat_depart = doc_goodat_list + second_depart_name_list + second_depart_name_list
+    goodat_depart = doc_goodat_list + second_depart_name_list + second_depart_name_list + second_depart_name_list
     return doc_goodat_list, second_depart_name_list, doc_id_list, goodat_depart
 
 
@@ -419,7 +419,7 @@ def write_cluster_process():
                         current_cluster_index = cluster_idx
                         flag = False
                         process_record.writelines("===============\n")
-                        break
+                        # break
                 elif arr_onehot.__len__() <= 3:
                     if same_words_count >= 1 and flag:
                         print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
@@ -431,7 +431,7 @@ def write_cluster_process():
                         current_cluster_index = cluster_idx
                         flag = False
                         process_record.writelines("===============\n")
-                        break
+                        # break
                 process_record.writelines("===============\n")
             if flag:
                 cluster_idx += 1
