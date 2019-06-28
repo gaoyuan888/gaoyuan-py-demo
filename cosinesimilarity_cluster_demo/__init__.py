@@ -241,7 +241,7 @@ def print_docid_class_dict():
 def diaginfo_classification():
     diag_info = pd.read_csv('data/diag.csv')
     disease_desc_list = diag_info['disease_desc'].values
-    doctor_id_list = diag_info['doctor_id'].values
+    doctor_id_list = diag_info['reception_doctor_id'].values
     write_ = codecs.open("diag_corpus_write.txt", 'w', encoding="utf8")
     write_.writelines("class,doctor_id,disease_desc\n")
     for line_idx in range(doctor_id_list.__len__()):
