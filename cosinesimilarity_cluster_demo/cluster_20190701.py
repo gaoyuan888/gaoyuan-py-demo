@@ -187,7 +187,7 @@ def assemble_feature_onehot_list(current_cluster_index, index_):
     if not flag:
         wd = Counter(feature_words_list)
         num_len_list = np.array(num_len_list)
-        len_tmp = int(np.mean(num_len_list) + np.std(num_len_list))
+        len_tmp = int(np.mean(num_len_list))
         feature_words_list = wd.most_common(len_tmp)
         # feature_words_list = wd.most_common(wd.__len__() if int(wd.__len__() * 0.8) < 3 else int(wd.__len__() * 0.8))
 
