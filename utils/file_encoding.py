@@ -1,5 +1,5 @@
 import codecs
-original_file="diag.csv"
+original_file="diag1.csv"
 target_file='diag.csv'
 # newfile=original_file[0:original_file.rfind(.)]+'_copy.csv'
 f = open(original_file, 'rb+')

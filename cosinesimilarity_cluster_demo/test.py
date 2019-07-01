@@ -5,6 +5,29 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy import sparse
 import operator
+from gensim.models import KeyedVectors
+
+a = [1, 0.8, 0.1]
+b = [1, 0.8, 1]
+c = [1, 1, 1]
+
+
+
+dd = []
+dd.append(a)
+dd.append(b)
+A_sparse_onehot = sparse.csr_matrix(dd)
+sss = cosine_similarity(dd)
+
+cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
+ss = cn_model["便秘"]
+dd = cn_model["肛肠"]
+ee = cn_model["衣服"]
+dee = cn_model["咳嗽"]
+ddsss = np.array([dd, ee, dee], dtype=np.float)
+dsadsa = cn_model.cosine_similarities(ss, ddsss).tolist()
+
+dfda = cn_model.similarity("便秘", "肛肠")
 
 sss = np.zeros(shape=[12000, ])
 sss[0] = 1
@@ -45,15 +68,6 @@ a = ["s", "d", "s"]
 b = ["b", "b", "d"]
 print(a + b)
 
-a = [1, 1, 0]
-b = [1, 0, 1]
-c = [1, 2, 1]
-
-dd = []
-dd.append(a)
-dd.append(b)
-A_sparse_onehot = sparse.csr_matrix(dd)
-sss = cosine_similarity(dd)
 print(sss)
 print(np.sum([a, b, c], axis=0))
 
