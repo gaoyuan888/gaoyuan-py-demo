@@ -27,7 +27,7 @@ corpus_list = []  # ['种植 牙 牙周病 治疗 修复 及口 内 治疗', '�
 corpus_tockens_list = []  # ["种植","牙"]
 # 语料分组 组织一个map 进行分组,存储分类信息
 goodat_cluster_list = []  # [[(0, '\t足踝外科', 0)],[(1, '\t种植科', 1), (2, '\t种植科', 1), (3, '\t种植科', 1)]]
-
+feature_words_disk = {}
 # 语料id-word字典
 corpus_id2word = []
 corpus_word2id = []
@@ -128,6 +128,7 @@ def compute_cluster_similar_dict(feature_onehot_list, current_onehot):
     # cluster_similar_dict = {}
     # cluster_similar_mult_samenum_dict = {}
     # cluster_same_dict = {}
+
     for cluster_idx in range(feature_onehot_list.__len__()):
         sentence_similar_1 = cosine_similarity([current_onehot, feature_onehot_list[cluster_idx]])
         # 计算当前行与当前类特征的相同词
@@ -176,35 +177,35 @@ def assemble_feature_onehot_list(current_cluster_index, index_):
     # 将最频繁词频转换成one-hot编码
     feature_onehot = [0] * tf_idf_weight.toarray()[0].__len__()
     flag = feature_onehot_list.__len__() == current_cluster_index
+
     cluster = goodat_cluster_list[current_cluster_index]
     feature_words_list = []
     num_len_list = []
     for tuple_list in cluster:
         current_cor_list = corpus_list[tuple_list.line_id].split(" ")
         feature_words_list += current_cor_list
-        num_len_list.append(current_cor_list.__len__())
+        num_len_list.append(set(current_cor_list).__len__())
     # 计算词频，取前百分之40的词频
-    if not flag:
-        wd = Counter(feature_words_list)
-        num_len_list = np.array(num_len_list)
-        len_tmp = int(np.mean(num_len_list) + np.std(num_len_list))
-        feature_words_list = wd.most_common(len_tmp)
-        # feature_words_list = wd.most_common(wd.__len__() if int(wd.__len__() * 0.8) < 3 else int(wd.__len__() * 0.8))
 
-    if flag:
-        for word in feature_words_list:
-            try:
-                feature_onehot[corpus_word2id[word]] = 1
-            except KeyError:
-                pass
-        feature_onehot_list.append(feature_onehot)
-    else:
-        for word in feature_words_list:
+    wd = Counter(feature_words_list)
+    # num_len_list = np.array(num_len_list)
+    # len_tmp = int(np.mean(num_len_list))
+    feature_words_list = wd.most_common()
+
+    feature_words_disk[current_cluster_index] = feature_words_list
+
+    # feature_words_list = wd.most_common(wd.__len__() if int(wd.__len__() * 0.8) < 3 else int(wd.__len__() * 0.8))
+    for feature_idx in feature_words_disk:
+        for word in feature_words_disk[feature_idx]:
             try:
                 feature_onehot[corpus_word2id[word[0]]] = 1
             except KeyError:
                 pass
-        feature_onehot_list[current_cluster_index] = feature_onehot
+        if feature_idx == current_cluster_index:
+            feature_onehot_list.append(feature_onehot)
+        else:
+            feature_onehot_list[feature_idx] = feature_onehot
+
     return feature_onehot_list
 
 
@@ -358,7 +359,7 @@ def write_cluster_feature_words():
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.drop_duplicates()
-    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
+    df_doctor_info = df_doctor_info.loc[0:50]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     doc_id_list = df_doctor_info['doc_id'].values
@@ -407,13 +408,13 @@ def write_cluster_process():
                 [GoodAtCluster(index_, second_depart_name_list[index_], cluster_idx, doc_id_list[index_], )])
         else:
             # 组装每一类特征词语的onehot编码
-            feature_onehot_list = assemble_feature_onehot_list(current_cluster_index, index_)
+            feature_onehot_list_1 = assemble_feature_onehot_list(current_cluster_index, index_)
             # 计算当前行与每一类的相似度
             cluster_similar_dict_1, cluster_similar_mult_samenum_dict_1, cluster_same_dict_1 = compute_cluster_similar_dict(
                 feature_onehot_list,
                 one_hot_array_similar[index_]
                 # current_cluster_index
-                )
+            )
 
             # 对dict排序
             # cluster_similar_dict = sorted(cluster_similar_dict.items(), key=operator.itemgetter(1), reverse=True)
@@ -442,12 +443,12 @@ def write_cluster_process():
                         arr_onehot.append(corpus_id2word[idx])
                 process_record.writelines("第{}行单词:{}".format(index_, arr_onehot) + "\n")
 
-                arr_onehot_similary = []
-                for idx in range(one_hot_array_similar[index_].__len__()):
-                    if one_hot_array_similar[index_][idx] != 0:
-                        # arr_onehot.append(tokenizer.index_word[idx])
-                        arr_onehot_similary.append(corpus_id2word[idx])
-                process_record.writelines("第{}行单词(相似):{}".format(index_, arr_onehot_similary) + "\n")
+                # arr_onehot_similary = []
+                # for idx in range(one_hot_array_similar[index_].__len__()):
+                #     if one_hot_array_similar[index_][idx] != 0:
+                #         # arr_onehot.append(tokenizer.index_word[idx])
+                #         arr_onehot_similary.append(corpus_id2word[idx])
+                # process_record.writelines("第{}行单词(相似):{}".format(index_, arr_onehot_similary) + "\n")
 
                 same_word_list = []
                 for idx in range(similar_words.__len__()):
@@ -457,7 +458,7 @@ def write_cluster_process():
                 process_record.writelines(
                     "第{}行与第{}类的相似度:{}，相同词为:{}".format(index_, current_idx, current_weight, same_word_list) + "\n")
                 same_words_count = same_word_list.__len__()
-                if ((current_weight > 0.13 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
+                if ((current_weight > 0.13 and same_words_count > 2) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines(
                         "第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
@@ -467,7 +468,7 @@ def write_cluster_process():
                     current_cluster_index = cluster_idx
                     flag = False
                     process_record.writelines("===============\n")
-                    break
+                    # break
                 process_record.writelines("===============\n")
             if flag:
                 cluster_idx += 1
@@ -610,7 +611,7 @@ if __name__ == '__main__':
 
     # 一、词向量模型
     print("step 7 ->开始加载词向量矩阵")
-    cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
+    # cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
     print("step 7 ->词向量矩阵加载完毕")
 
     # 将每一行onehot编码按照词语之间的相似度进行赋值
