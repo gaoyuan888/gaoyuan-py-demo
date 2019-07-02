@@ -494,12 +494,12 @@ if __name__ == '__main__':
 
     # 一、词向量模型
     print("step 7 ->开始加载词向量矩阵")
-    cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
+    # cn_model = KeyedVectors.load_word2vec_format('data/sgns.zhihu.bigram', binary=False)
     print("step 7 ->词向量矩阵加载完毕")
 
     # 将每一行onehot编码按照词语之间的相似度进行赋值
     print("step 8 ->根据句子onehot相似矩阵，计算句子之间的相似度，这个过程比较费时")
-    one_hot_array_similar = assemble_onehot_similar_array()
+    # one_hot_array_similar = assemble_onehot_similar_array()
     # 计算矩阵余弦相似度
     print("step 9 ->根据句子onehot相似矩阵，计算句子之间的相似度")
     A_sparse = sparse.csr_matrix(one_hot_array_similar)

@@ -43,7 +43,7 @@ cluster_similar_dict = {}
 cluster_similar_mult_samenum_dict = {}
 cluster_same_dict = {}
 
-regstr = "[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+|[a-zA-Z0-9_]+"
+regstr = "[\s+\.\!\/_,$%^*(+\"\'\t]+|[+——！，。？、~@#￥%……&*（）]+|[a-zA-Z0-9_]+"
 
 
 class GoodAtCluster:
@@ -124,7 +124,7 @@ def print_similar_array():
     similar_df.close()
 
 
-def compute_cluster_similar_dict(feature_onehot_list, current_onehot,current_cluster_index,index_):
+def compute_cluster_similar_dict(feature_onehot_list, current_onehot, current_cluster_index, index_):
     # 将最频繁词频转换成one-hot编码
     cluster = goodat_cluster_list[current_cluster_index]
     feature_words_list = []
@@ -386,9 +386,13 @@ def write_cluster_feature_words():
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.drop_duplicates()
-    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
+    df_doctor_info = df_doctor_info.loc[0:1000]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
+    for depart_name in second_depart_name_list:
+        depart_name = re.sub(regstr, "", depart_name)
+        jieba.add_word(depart_name)
+
     doc_id_list = df_doctor_info['doc_id'].values
     goodat_depart = doc_goodat_list + second_depart_name_list + second_depart_name_list + second_depart_name_list
     return doc_goodat_list, second_depart_name_list, doc_id_list, goodat_depart
@@ -454,7 +458,8 @@ def write_cluster_process():
             for cluster_similar in cluster_similar_mult_samenum_dict_1:
                 current_idx = cluster_similar[0]  # 每一类id
                 # current_weight = cluster_similar[1]  # 每一类的相似度weight
-                current_weight = cluster_similar_dict_1[current_idx]  # 每一类的相似度weight
+                current_weight = cluster_similar_dict_1[current_idx]  # 当前行与当前类的相似度weight
+
                 similar_words = cluster_same_dict_1[current_idx]
                 # similar_words = yuCaozuo(feature_onehot_list[current_idx], one_hot_array_similar[index_])
                 arr_clss = []
@@ -486,8 +491,10 @@ def write_cluster_process():
                 process_record.writelines(
                     "第{}行与第{}类的相似度:{}，相同词为:{}".format(index_, current_idx, current_weight, same_word_list) + "\n")
                 same_words_count = same_word_list.__len__()
-                if ((
-                            current_weight > 0.13 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
+
+                if same_words_count == 0:
+                    break
+                if ((current_weight > 0.13 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines(
                         "第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
