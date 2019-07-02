@@ -17,7 +17,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 # 定义全局变量
-
 # 语料onehot 编码，已经填充了近义词
 one_hot_array_similar = []
 # 语料onehot 编码，没有组装近义词
@@ -387,7 +386,7 @@ def write_cluster_feature_words():
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.drop_duplicates()
-    df_doctor_info = df_doctor_info.loc[5000:6000]  # 切片
+    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     for depart_name in second_depart_name_list:
@@ -404,7 +403,6 @@ def write_doc_goodat_tokens(goodat_depart):
     line_num = 1
     for line in goodat_depart:
         line_num = line_num + 1
-        # print('---- processing ', line_num, ' article----------------')
         line = re.sub(regstr, "", line)
         raw_sentence = []
         raw_words = list(jieba.cut(line))
@@ -430,7 +428,7 @@ def read_doc_goodat_tokens():
 
 
 def write_cluster_process():
-    cluster_idx = 0
+    cluster_idx=0
     corpus_size = corpus_list.__len__()
     process_record = codecs.open("process_record.txt", 'w', encoding="utf8")
     current_cluster_index = cluster_idx
@@ -495,7 +493,8 @@ def write_cluster_process():
 
                 if same_words_count == 0:
                     break
-                if ((current_weight > 0.12 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
+                if ((
+                            current_weight > 0.12 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines(
                         "第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
@@ -656,18 +655,19 @@ if __name__ == '__main__':
     # one_hot_array_similar = assemble_onehot_similar_array()
     # 计算矩阵余弦相似度
     print("step 9 ->根据句子onehot相似矩阵，计算句子之间的相似度")
-    A_sparse = sparse.csr_matrix(one_hot_array_similar)
-    sentence_similar_array = cosine_similarity(A_sparse)
+    # A_sparse = sparse.csr_matrix(one_hot_array_similar)
+    # sentence_similar_array = cosine_similarity(A_sparse)
 
     # 打印相似矩阵到文件
-    print_similar_array()
+    # print_similar_array()
 
     print("step 10 ->根据句子onehot矩阵，计算句子之间的相似度")
     # 计算one-hot编码的余弦相似度
-    A_sparse_onehot = sparse.csr_matrix(one_hot_array)
-    similarities_onehot = cosine_similarity(A_sparse_onehot)
+    # A_sparse_onehot = sparse.csr_matrix(one_hot_array)
+    # similarities_onehot = cosine_similarity(A_sparse_onehot)
 
     print("step 11 ->开始文本聚类，打印聚类执行过程,生成中间文件:process_record.txt")
+
     write_cluster_process()
 
     print("step 11 ->打印每一类的特征词")
