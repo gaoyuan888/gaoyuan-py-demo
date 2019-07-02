@@ -387,7 +387,7 @@ def write_cluster_feature_words():
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.drop_duplicates()
-    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
+    df_doctor_info = df_doctor_info.loc[5000:6000]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     for depart_name in second_depart_name_list:
