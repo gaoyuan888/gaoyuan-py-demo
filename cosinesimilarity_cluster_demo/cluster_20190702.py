@@ -386,7 +386,7 @@ def write_cluster_feature_words():
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.drop_duplicates()
-    df_doctor_info = df_doctor_info.loc[0:1000]  # 切片
+    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     for depart_name in second_depart_name_list:
@@ -494,7 +494,7 @@ def write_cluster_process():
 
                 if same_words_count == 0:
                     break
-                if ((current_weight > 0.13 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
+                if ((current_weight > 0.12 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines(
                         "第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
