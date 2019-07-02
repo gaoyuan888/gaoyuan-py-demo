@@ -175,8 +175,8 @@ def compute_cluster_similar_dict(feature_onehot_list, current_onehot):
 # 组装每一类one-hot特征编码
 def assemble_feature_onehot_list(current_cluster_index, index_):
     # 将最频繁词频转换成one-hot编码
-    feature_onehot = [0] * tf_idf_weight.toarray()[0].__len__()
-    flag = feature_onehot_list.__len__() == current_cluster_index
+
+    # flag = feature_onehot_list.__len__() == current_cluster_index
 
     cluster = goodat_cluster_list[current_cluster_index]
     feature_words_list = []
@@ -193,15 +193,23 @@ def assemble_feature_onehot_list(current_cluster_index, index_):
     feature_words_list = wd.most_common()
 
     feature_words_disk[current_cluster_index] = feature_words_list
-
+    c_l_length = set(corpus_list[index_].split(" ")).__len__()
     # feature_words_list = wd.most_common(wd.__len__() if int(wd.__len__() * 0.8) < 3 else int(wd.__len__() * 0.8))
+
     for feature_idx in feature_words_disk:
+        feature_onehot = [0] * tf_idf_weight.toarray()[0].__len__()
+        index_flag = 0
         for word in feature_words_disk[feature_idx]:
             try:
-                feature_onehot[corpus_word2id[word[0]]] = 1
+                if index_flag < c_l_length:
+                    feature_onehot[corpus_word2id[word[0]]] = 1
+                    index_flag += 1
+                else:
+                    break
             except KeyError:
                 pass
-        if feature_idx == current_cluster_index:
+
+        if feature_idx == current_cluster_index == feature_onehot_list.__len__():
             feature_onehot_list.append(feature_onehot)
         else:
             feature_onehot_list[feature_idx] = feature_onehot
@@ -359,7 +367,7 @@ def write_cluster_feature_words():
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
     df_doctor_info = df_doctor_info.drop_duplicates()
-    df_doctor_info = df_doctor_info.loc[0:50]  # 切片
+    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
     doc_id_list = df_doctor_info['doc_id'].values
@@ -458,7 +466,8 @@ def write_cluster_process():
                 process_record.writelines(
                     "第{}行与第{}类的相似度:{}，相同词为:{}".format(index_, current_idx, current_weight, same_word_list) + "\n")
                 same_words_count = same_word_list.__len__()
-                if ((current_weight > 0.13 and same_words_count > 2) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
+                if ((
+                            current_weight > 0.13 and same_words_count >= 1) or same_words_count >= arr_onehot.__len__() * 0.4) and flag:
                     print("第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight))
                     process_record.writelines(
                         "第{}行加入第{}类,相似度:{}".format(index_, current_idx, current_weight) + "\n")
@@ -468,7 +477,7 @@ def write_cluster_process():
                     current_cluster_index = cluster_idx
                     flag = False
                     process_record.writelines("===============\n")
-                    # break
+                    break
                 process_record.writelines("===============\n")
             if flag:
                 cluster_idx += 1
