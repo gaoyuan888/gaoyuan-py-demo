@@ -1,4 +1,5 @@
 # gensim用来加载预训练word vector
+# 待优化：某一类含有科室名称后，不再添加另外的科室名称
 from gensim.models import KeyedVectors
 from keras.preprocessing.text import Tokenizer
 from scipy import sparse
