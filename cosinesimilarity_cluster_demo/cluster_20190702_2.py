@@ -89,42 +89,6 @@ def compute_cluster_similar_dict(index_):
     return cluster_similar_dict
 
 
-# 组装每一类one-hot特征编码
-def assemble_feature_onehot_list(current_cluster_index, index_):
-    # 将最频繁词频转换成one-hot编码
-    cluster = goodat_cluster_list[current_cluster_index]
-    feature_words_list = []
-    num_len_list = []
-    for tuple_list in cluster:
-        current_cor_list = corpus_list[tuple_list.line_id].split(" ")
-        feature_words_list += current_cor_list
-        num_len_list.append(set(current_cor_list).__len__())
-    # 计算词频，取前百分之40的词频
-
-    wd = Counter(feature_words_list)
-    feature_words_list = wd.most_common()
-    feature_words_disk[current_cluster_index] = feature_words_list
-    c_l_length = set(corpus_list[index_].split(" ")).__len__()
-    for feature_idx in feature_words_disk:
-        feature_onehot = [0] * tf_idf_weight.toarray()[0].__len__()
-        index_flag = 0
-        for word in feature_words_disk[feature_idx]:
-            try:
-                if index_flag < c_l_length:
-                    feature_onehot[corpus_word2id[word[0]]] = 1
-                    index_flag += 1
-                else:
-                    break
-            except KeyError:
-                pass
-
-        if feature_idx == current_cluster_index == feature_onehot_list.__len__():
-            feature_onehot_list.append(feature_onehot)
-        else:
-            feature_onehot_list[feature_idx] = feature_onehot
-
-    return feature_onehot_list
-
 
 def yuCaozuo(arr1, arr2):
     # a1 = re.sub("['[\]'\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", str(arr1))
