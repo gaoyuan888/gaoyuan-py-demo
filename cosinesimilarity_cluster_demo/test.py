@@ -6,12 +6,51 @@ from sklearn.metrics.pairwise import cosine_similarity
 from scipy import sparse
 import operator
 from gensim.models import KeyedVectors
+import codecs
+import json
 
-a = [1, 0.8, 0.1]
+b = [1, 0.8, 1]
+sssssss = sorted(np.array(b),reverse=True)
+list()
+
+fdsa = sorted(b)
+ssssss = str(b)
+write_ = codecs.open("feature_words_write.txt", 'w', encoding="utf8")
+with open("./goodat_cluster.txt", 'r', encoding='utf-8') as load_f:
+    strF = load_f.read()
+    if len(strF) > 0:
+        goodat_list = json.loads(strF)
+    print(goodat_list)
+    for good_at_arr in goodat_list:
+        line_list = []
+        for good_at in good_at_arr:
+            line_list += corpus_list[good_at.line_id].split(" ")
+        write_.writelines(line_list + "\n")
+write_.close()
+
 b = [1, 0.8, 1]
 c = [1, 1, 1]
+cc = b + c
+# array_ = np.loadtxt("./data.txt")
+# list_ = list(array_)
+with open("./goodat_cluster.txt", 'r', encoding='utf-8') as load_f:
+    strF = load_f.read()
+    if len(strF) > 0:
+        datas = json.loads(strF)
+    else:
+        datas = {}
+    print(datas)
 
+# 打开一个json文件
+data = open("./goodat_cluster.txt", encoding='utf-8')
+# 转换为python对象
+strJson = json.load(data)
+print(strJson[0][0]['line_id'])
+for item in strJson:
+    print(item)
 
+b = [1, 0.8, 1]
+c = [1, 1, 1]
 
 dd = []
 dd.append(a)
