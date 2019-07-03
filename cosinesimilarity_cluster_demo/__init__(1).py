@@ -90,38 +90,6 @@ def compute_cluster_similar_dict(index_):
 
 
 # 组装每一类one-hot特征编码
-# def assemble_feature_onehot_list():
-#     feature_onehot_list = []
-#     for cluster in goodat_cluster_list:
-#         onehot_sum_list = [0] * tf_idf_weight.toarray()[0].__len__()
-#         for tuple_list in cluster:
-#             t1 = [1 if weight >= tfidf_weight_checkpoint else 0 for weight in tf_idf_weight.toarray()[tuple_list[0]]]
-#             onehot_sum_list = huoCaozuo(onehot_sum_list, t1)
-#         feature_onehot_list.append(onehot_sum_list)
-#     return feature_onehot_list
-
-
-# 组装每一类one-hot特征编码
-# def assemble_feature_onehot_list():
-#     feature_onehot_list = []
-#     for cluster in goodat_cluster_list:
-#         feature_words_list = []
-#         for tuple_list in cluster:
-#             feature_words_list += corpus_list[tuple_list.line_id].split(" ")
-#         # 计算词频，取前百分之40的词频
-#         wd = Counter(feature_words_list)
-#         feature_words_list = wd.most_common(int(wd.__len__() * 0.4))
-#         # 将最频繁词频转换成one-hot编码
-#         feature_onehot = [0] * tf_idf_weight.toarray()[0].__len__()
-#         for word in feature_words_list:
-#             try:
-#                 feature_onehot[corpus_word2id[word[0]]] = 1
-#             except KeyError:
-#                 pass
-#         feature_onehot_list.append(feature_onehot)
-#     return feature_onehot_list
-
-# 组装每一类one-hot特征编码
 def assemble_feature_onehot_list(current_cluster_index, index_):
     # 将最频繁词频转换成one-hot编码
     cluster = goodat_cluster_list[current_cluster_index]
@@ -188,13 +156,17 @@ def huoCaozuo(arr1, arr2):
 
 def print_goodat_cluster():
     goodat_cluster_write = codecs.open("goodat_cluster.txt", 'w', encoding="utf8")
-    goodat_cluster_write.writelines("[")
+    # goodat_cluster_write.writelines("[")
+    goodat_str = "["
     for goodat_cluster in goodat_cluster_list:
-        cluster_str = "["
+        goodat_str += "["
         for cluster in goodat_cluster:
-            cluster_str = cluster_str + "{" + cluster.__str__() + "},"
-        goodat_cluster_write.writelines(cluster_str + "],\n")
-    goodat_cluster_write.writelines("]")
+            goodat_str += "{" + cluster.__str__() + "},"
+        # 去掉最后一个逗号
+        goodat_str = goodat_str[:-1]+"],\n"
+        # goodat_cluster_write.writelines(cluster_str + "],\n")
+    goodat_str = goodat_str[:-2]+"]"
+    goodat_cluster_write.writelines(goodat_str)
     goodat_cluster_write.close()
 
 

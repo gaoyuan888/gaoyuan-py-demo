@@ -15,6 +15,7 @@ import re
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
+import json  # 引入模块
 
 # 定义全局变量
 # 语料onehot 编码，已经填充了近义词
@@ -54,12 +55,10 @@ class GoodAtCluster:
         self.doctor_id = doctor_id
 
     def __str__(self):
-        return "line_id:{},second_depart_name:{},current_idx:{},doctor_id:{}".format(self.line_id,
-                                                                                     "'" + self.second_depart_name + "'",
-                                                                                     self.cluster_idx,
-                                                                                     self.doctor_id).replace(" ",
-                                                                                                             "").replace(
-            "\t", "")
+        return "\"line_id\":{},\"second_depart_name\":{},\"current_idx\":{},\"doctor_id\":{}".format(self.line_id,
+                                                                                                     "\"" + self.second_depart_name + "\"",
+                                                                                                     self.cluster_idx,
+                                                                                                     self.doctor_id)
 
 
 def print_similar_array():
@@ -87,7 +86,6 @@ def compute_cluster_similar_dict(index_):
         else:
             cluster_similar_dict[cluster_idx] = 0
     return cluster_similar_dict
-
 
 
 def yuCaozuo(arr1, arr2):
@@ -120,13 +118,15 @@ def huoCaozuo(arr1, arr2):
 
 def print_goodat_cluster():
     goodat_cluster_write = codecs.open("goodat_cluster.txt", 'w', encoding="utf8")
-    goodat_cluster_write.writelines("[")
+    goodat_str = "["
     for goodat_cluster in goodat_cluster_list:
-        cluster_str = "["
+        goodat_str += "["
         for cluster in goodat_cluster:
-            cluster_str = cluster_str + "{" + cluster.__str__() + "},"
-        goodat_cluster_write.writelines(cluster_str + "],\n")
-    goodat_cluster_write.writelines("]")
+            goodat_str += "{" + cluster.__str__() + "},"
+        # 去掉最后一个逗号
+        goodat_str = goodat_str[:-1] + "],\n"
+    goodat_str = goodat_str[:-2] + "]"
+    goodat_cluster_write.writelines(goodat_str)
     goodat_cluster_write.close()
 
 
@@ -244,17 +244,31 @@ def read_stop_words():
 
 
 def write_cluster_feature_words():
+    # 打开一个json文件
     write_ = codecs.open("feature_words_write.txt", 'w', encoding="utf8")
-    write_.writelines("[")
-    for onehot_array in feature_onehot_list:
-        write_.writelines("[")
-        feature_list = []
-        for onehot_index in range(onehot_array.__len__()):
-            if onehot_array[onehot_index] != 0:
-                feature_list.append(corpus_id2word[onehot_index] + ",")
-        write_.writelines(feature_list)
-        write_.writelines("],\n")
-    write_.writelines("]")
+    with open("./goodat_cluster.txt", 'r', encoding='utf-8') as load_f:
+        strF = load_f.read()
+        if len(strF) > 0:
+            goodat_list = json.loads(strF)
+        print(goodat_list)
+        for good_at_arr in goodat_list:
+            line_list = []
+            for good_at in good_at_arr:
+                line_list += corpus_list[good_at['line_id']].split(" ")
+            write_.writelines(str(set(line_list)) + "\n")
+    write_.close()
+
+    # write_ = codecs.open("feature_words_write.txt", 'w', encoding="utf8")
+    # write_.writelines("[")
+    # for onehot_array in feature_onehot_list:
+    #     write_.writelines("[")
+    #     feature_list = []
+    #     for onehot_index in range(onehot_array.__len__()):
+    #         if onehot_array[onehot_index] != 0:
+    #             feature_list.append(corpus_id2word[onehot_index] + ",")
+    #     write_.writelines(feature_list)
+    #     write_.writelines("],\n")
+    # write_.writelines("]")
     write_.close()
 
 
@@ -264,9 +278,12 @@ def read_doctor_corpus():
     df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
     doc_goodat_list = df_doctor_info['doc_goodat'].values
     second_depart_name_list = df_doctor_info['second_depart_name'].values
+    depart_name_list = []
     for depart_name in second_depart_name_list:
         depart_name = re.sub(regstr, "", depart_name)
         jieba.add_word(depart_name)
+        depart_name_list.append(depart_name)
+    second_depart_name_list = np.array(depart_name_list)
 
     doc_id_list = df_doctor_info['doc_id'].values
     goodat_depart = doc_goodat_list + second_depart_name_list + second_depart_name_list + second_depart_name_list
@@ -410,12 +427,12 @@ if __name__ == '__main__':
 
     write_cluster_process()
 
-    print("step 11 ->打印每一类的特征词")
-    write_cluster_feature_words()
-
     # 打印聚类结果
     print("step 11 ->按照医生擅长聚类完毕！")
     print_goodat_cluster()
+
+    print("step 11 ->打印每一类的特征词")
+    write_cluster_feature_words()
 
     print("step 12 ->按照医生id作为key,类别作为value组装字段,生成文件:docid_class_write.txt")
     print_docid_class_dict()
