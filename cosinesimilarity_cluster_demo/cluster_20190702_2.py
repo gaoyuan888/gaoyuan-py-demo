@@ -224,23 +224,44 @@ def statistic_diagclass_total():
 def assemble_train_corpus():
     diagclass_total = pd.read_csv('diagclass_total_write.txt')
     diagclass_total_list = diagclass_total['total'].values
+    diagclass_class_list = diagclass_total['class'].values
     corpus_class_size = diagclass_total_list[int(diagclass_total_list.__len__() * 0.5)]
+    corpus_class_size = 1500
     print("每一类的最大个数为:{}".format(corpus_class_size))
+    train_class_total = 28
+    print("指定训练的类的个数：{}".format(train_class_total))
+    class_trainclass_dict = {}
+    trainclass_idx = 0
+    for _class_ in diagclass_class_list:
+        if trainclass_idx == train_class_total:
+            break
+        class_trainclass_dict[_class_] = trainclass_idx
+        trainclass_idx += 1
+
+    # 将字典写到文件中
+    write_ = codecs.open("class_trainclass_write.txt", 'w', encoding="utf8")
+    write_.writelines("class,trainclass\n")
+    for d_k in class_trainclass_dict:
+        write_.writelines(str(d_k) + "," + str(class_trainclass_dict[d_k]) + "\n")
+    write_.close()
+
     diag_corpus = pd.read_csv('diag_corpus_write.txt')
     class_ = diag_corpus["class"]
     doctor_id = diag_corpus["doctor_id"]
     disease_desc = diag_corpus["disease_desc"]
     write_ = codecs.open("train_corpus_write.txt", 'w', encoding="utf8")
-    write_.writelines("class,doctor_id,disease_desc\n")
+    write_.writelines("class,train_class,doctor_id,disease_desc\n")
     type_total_dict = {}
     for index in range(diag_corpus.__len__()):
+        if not class_trainclass_dict.__contains__(class_[index]):
+            continue
         if type_total_dict.__contains__(class_[index]):
             type_total_dict[class_[index]] = type_total_dict[class_[index]] + 1
         else:
             type_total_dict[class_[index]] = 1
         if type_total_dict[class_[index]] < corpus_class_size:
-            # print(diag_corpus[index])
-            write_.writelines(str(class_[index]) + "," + str(doctor_id[index]) + "," + str(disease_desc[index]) + "\n")
+            write_.writelines(str(class_[index]) + "," + str(class_trainclass_dict[class_[index]]) + "," + str(
+                doctor_id[index]) + "," + str(disease_desc[index]) + "\n")
     write_.close()
 
 
