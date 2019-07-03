@@ -14,13 +14,13 @@ target = utils.load_label(catalogue=utils.MULTI_FLAG)
 titles = []
 
 corpus_list = pd.read_csv("train_corpus_write.txt")
-class_list = corpus_list["class"]
+class_list = corpus_list["train_class"]
 disease_desc_list = corpus_list["disease_desc"]
-diag_size = pd.read_csv("diagclass_total_write.txt").__len__()
-target = np.zeros(shape=[corpus_list.__len__(), diag_size])
+target_size = pd.read_csv("class_trainclass_write.txt").__len__()
+target = np.zeros(shape=[corpus_list.__len__(), target_size])
 for index in range(corpus_list.__len__()):
     titles.append(disease_desc_list[index])
-    type_ = class_list[index] - 1
+    type_ = class_list[index]
     target[index][type_] = 1
 
 max_sequence_length = 30
@@ -39,7 +39,7 @@ sorted_vocab = sorted(dict.items(), key=lambda x: x[1])
 
 # 配置网络结构
 model = utils.build_netword(catalogue=utils.MULTI_FLAG, dict=dict, embedding_size=embedding_size,
-                            max_sequence_length=max_sequence_length)
+                            max_sequence_length=max_sequence_length, dense_size=target_size)
 
 # # 训练模型
 model.fit(text_processed, target, batch_size=512, epochs=100, )

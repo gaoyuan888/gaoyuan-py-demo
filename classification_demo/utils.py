@@ -54,7 +54,7 @@ def load_label(catalogue=BINARY_FLAG):
         return dummy_target
 
 
-def build_netword(dict, catalogue=BINARY_FLAG, embedding_size=50, max_sequence_length=30):
+def build_netword(dict, catalogue=BINARY_FLAG, embedding_size=50, max_sequence_length=30, dense_size=1):
     if catalogue == BINARY_FLAG:
         # 配置网络结构
         model = krs.Sequential()
@@ -73,7 +73,7 @@ def build_netword(dict, catalogue=BINARY_FLAG, embedding_size=50, max_sequence_l
         # 该层只能用作模型中的第一层。
         model.add(krs.layers.Embedding(len(dict.items()), embedding_size, input_length=max_sequence_length))
         model.add(krs.layers.LSTM(32, dropout=0.2, recurrent_dropout=0.2))
-        model.add(krs.layers.Dense(7))
+        model.add(krs.layers.Dense(dense_size))
         model.add(krs.layers.Activation("softmax"))
         model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
