@@ -2,14 +2,10 @@
 import pandas as pd
 import jieba
 import numpy
-import sys
-
-reload(sys)
-sys.setdefaultencoding('utf-8')
 df_news = pd.read_table('./data/val.txt', names=['category', 'theme', 'URL', 'content'], encoding='utf-8')
 df_news = df_news.dropna()
 df_news.head()
-print df_news.shape
+print (df_news.shape)
 
 # 1.分词：使用结吧分词器 ###
 content = df_news.content.values.tolist()
@@ -22,7 +18,7 @@ for line in content:
 
 print (content_S[1000])
 df_content = pd.DataFrame({'content_S': content_S})
-print df_content.head()
+print (df_content.head())
 stopwords = pd.read_csv("stopwords.txt", index_col=False, sep="\t", quoting=3, names=['stopword'], encoding='utf-8')
 stopwords.head(20)
 
@@ -95,13 +91,13 @@ for topic in lda.print_topics(num_topics=20, num_words=5):
 
 df_train = pd.DataFrame({'contents_clean': contents_clean, 'label': df_news['category']})
 print(df_train.tail())
-print df_train.label.unique()
+print (df_train.label.unique())
 
 label_mapping = {u"汽车": 1, u"财经": 2, u"科技": 3, u"健康": 4, u"体育": 5, u"教育": 6, u"文化": 7, u"军事": 8, u"娱乐": 9, u"时尚": 0}
 tmp = df_train['label']
 df_train['label'] = list(map(lambda x: label_mapping.get(x), df_train['label']))
 # df_train['label'] = df_train['label'].map(label_mapping)
-print df_train.head()
+print (df_train.head())
 
 from sklearn.model_selection import train_test_split
 
@@ -109,7 +105,7 @@ x_train, x_test, y_train, y_test = train_test_split(df_train['contents_clean'].v
                                                     random_state=12)
 
 # x_train = x_train.flatten()
-print x_train[0][1]
+print (x_train[0][1])
 words = []
 for line_index in range(len(x_train)):
     try:
@@ -117,7 +113,7 @@ for line_index in range(len(x_train)):
         words.append(' '.join(x_train[line_index]))
     except:
         print (line_index, words[line_index])
-print words[0]
+print (words[0])
 print (len(words))
 
 # 贝叶斯分类器
@@ -147,7 +143,7 @@ for line_index in range(len(x_test)):
         print (line_index, test_words[line_index])
 test_words[0]
 
-print classifier.score(vec.transform(test_words), y_test)
+print (classifier.score(vec.transform(test_words), y_test))
 
 from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer
 
@@ -169,6 +165,6 @@ predicted = classifier.predict(vectorizer.transform(docs_new))
 for text, c in zip(docs_new, predicted):
     for k, v in label_mapping.items():
         if c == v:
-            print k + "类==>  " + text
+            print (k + "类==>  " + text)
 
 rest = vectorizer.transform(words)
