@@ -73,15 +73,3 @@ for res in weight_dict:
     print("该句子属于第{}类的概率是：{}".format(trainclass_class_dict[res[0]], res[1]))
 
 catalogue = list(result[0]).index(max(result[0]))
-
-if max(result[0]) > 0.8:
-    if catalogue == 0:
-        print("第一类")
-    elif catalogue == 1:
-        print("第二类")
-    elif catalogue == 2:
-        print("第三类")
-    elif catalogue == 3:
-        print("第四类")
-    elif catalogue == 4:
-        print("第五类")
