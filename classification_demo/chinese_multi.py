@@ -58,7 +58,7 @@ model = utils.build_netword(catalogue=utils.MULTI_FLAG, dict=dict, embedding_siz
 model.load_weights("health_and_tech_design.h5")
 
 # 预测样本
-sen = "我手指划伤出血"
+sen = "痘痘脸,需要异维酸软胶囊,之前医院开的,上次也在京东大药房买过"
 sen_prosessed = " ".join(jb.cut(sen, cut_all=True))
 sen_prosessed = vocab_processor.transform([sen_prosessed])
 sen_prosessed = np.array(list(sen_prosessed))
