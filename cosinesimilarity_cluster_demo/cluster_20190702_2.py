@@ -250,12 +250,11 @@ def write_cluster_feature_words():
         strF = load_f.read()
         if len(strF) > 0:
             goodat_list = json.loads(strF)
-        print(goodat_list)
         for good_at_arr in goodat_list:
             line_list = []
             for good_at in good_at_arr:
                 line_list += corpus_list[good_at['line_id']].split(" ")
-            write_.writelines(str(set(line_list)) + "\n")
+            write_.writelines(str(good_at_arr[0]['current_idx']) + str(set(line_list)) + "\n")
     write_.close()
 
     # write_ = codecs.open("feature_words_write.txt", 'w', encoding="utf8")
