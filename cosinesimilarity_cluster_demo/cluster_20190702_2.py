@@ -257,19 +257,6 @@ def write_cluster_feature_words():
             write_.writelines(str(good_at_arr[0]['current_idx']) + str(set(line_list)) + "\n")
     write_.close()
 
-    # write_ = codecs.open("feature_words_write.txt", 'w', encoding="utf8")
-    # write_.writelines("[")
-    # for onehot_array in feature_onehot_list:
-    #     write_.writelines("[")
-    #     feature_list = []
-    #     for onehot_index in range(onehot_array.__len__()):
-    #         if onehot_array[onehot_index] != 0:
-    #             feature_list.append(corpus_id2word[onehot_index] + ",")
-    #     write_.writelines(feature_list)
-    #     write_.writelines("],\n")
-    # write_.writelines("]")
-    write_.close()
-
 
 def read_doctor_corpus():
     df_doctor_info = pd.read_csv('data/doctor.csv')
