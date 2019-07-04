@@ -1,6 +1,6 @@
 import codecs
-original_file="diag1.csv"
-target_file='diag.csv'
+original_file="goodat_cluster.txt"
+target_file='goodat_cluster1.txt'
 # newfile=original_file[0:original_file.rfind(.)]+'_copy.csv'
 f = open(original_file, 'rb+')
 content = f.read()  # 读取文件内容，content为bytes类型，而非string类型
