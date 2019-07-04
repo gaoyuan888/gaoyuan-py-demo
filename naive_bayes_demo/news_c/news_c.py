@@ -22,7 +22,7 @@ print(content_S[1000])
 df_content = pd.DataFrame({'content_S': content_S})
 print(df_content.head())
 stopwords = pd.read_csv("stopwords.txt", index_col=False, sep="\t", quoting=3, names=['stopword'], encoding='utf-8')
-stopwords.head(20)
+print(stopwords.head(20))
 
 
 def drop_stopwords(contents, stopwords):
@@ -37,7 +37,6 @@ def drop_stopwords(contents, stopwords):
             all_words.append(str(word))
         contents_clean.append(line_clean)
     return contents_clean, all_words
-    # print (contents_clean)
 
 
 contents = df_content.content_S.values.tolist()
@@ -49,12 +48,12 @@ contents_clean, all_words = drop_stopwords(contents, stopwords)
 # df_content.head()
 
 df_content = pd.DataFrame({'contents_clean': contents_clean})
-df_content.head()
+print(df_content.head())
 df_all_words = pd.DataFrame({'all_words': all_words})
-df_all_words.head()
+print(df_all_words.head())
 words_count = df_all_words.groupby(by=['all_words'])['all_words'].agg({"count": numpy.size})
 words_count = words_count.reset_index().sort_values(by=["count"], ascending=False)
-words_count.head()
+print(words_count.head())
 
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
@@ -130,7 +129,7 @@ print(cv_fit.toarray().sum(axis=0))
 
 vec = CountVectorizer(analyzer='word', max_features=4000, lowercase=False)
 vec.fit(words)
-
+sss = vec.transform(words).toarray()
 from sklearn.naive_bayes import MultinomialNB
 
 classifier = MultinomialNB()
@@ -155,7 +154,7 @@ vectorizer.fit(words)
 classifier = MultinomialNB()
 classifier.fit(vectorizer.transform(words), y_train)
 
-classifier.score(vectorizer.transform(test_words), y_test)
+print(classifier.score(vectorizer.transform(test_words), y_test))
 
 # Tokenizing text
 count_vect = CountVectorizer()
