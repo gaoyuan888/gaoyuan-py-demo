@@ -4,8 +4,9 @@ import jieba
 import numpy
 
 df_news = pd.read_table('./data/val.txt', names=['category', 'theme', 'URL', 'content'], encoding='utf-8')
+# https://www.jianshu.com/p/89de6c085d22
 df_news = df_news.dropna()
-df_news.head()
+print(df_news.head())
 print(df_news.shape)
 
 # 1.分词：使用结吧分词器 ###
