@@ -9,6 +9,12 @@ from gensim.models import KeyedVectors
 import codecs
 import json
 import jieba
+import pandas as pd
+
+diag_list = pd.read_csv('data/23728146.csv')
+disease_desc_list = diag_list["disease_desc"]
+
+print(diag_list.shape)
 
 sss = jieba.cut("你好我好大家好", cut_all=True)
 for ss in sss:
