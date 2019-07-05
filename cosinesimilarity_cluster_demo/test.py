@@ -8,9 +8,14 @@ import operator
 from gensim.models import KeyedVectors
 import codecs
 import json
+import jieba
+
+sss = jieba.cut("你好我好大家好", cut_all=True)
+for ss in sss:
+    print(ss)
 
 b = [1, 0.8, 1]
-sssssss = sorted(np.array(b),reverse=True)
+sssssss = sorted(np.array(b), reverse=True)
 list()
 
 fdsa = sorted(b)

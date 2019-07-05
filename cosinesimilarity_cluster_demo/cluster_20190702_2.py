@@ -158,6 +158,12 @@ def diaginfo_classification():
             continue
         disease_desc = disease_desc_list[line_idx]
         disease_desc = re.sub(regstr, "", disease_desc)
+        disease_str_list = ""
+        for w in jieba.cut(disease_desc):
+            if w not in stop_words:
+                disease_str_list += w + "."
+        disease_desc = disease_str_list[:-1]
+
         if disease_desc is not None and disease_desc != "":
             if docid_class_dict.__contains__(doctor_id_list[line_idx]):
                 class_ = docid_class_dict[doctor_id_list[line_idx]]
