@@ -11,13 +11,15 @@ print(df_news.shape)
 
 # 1.分词：使用结吧分词器 ###
 content = df_news.disease_desc.values.tolist()
+train_class = df_news.train_class.values.tolist()
 print(content[1000])
 content_S = []
-for line in content:
-    current_segment = jieba.lcut(line)
+train_class_S = []
+for line_idx in range(content.__len__()):
+    current_segment = jieba.lcut(content[line_idx])
     if len(current_segment) > 1 and current_segment != '\r\n':  # 换行符
         content_S.append(current_segment)
-
+        train_class_S.append(train_class[line_idx])
 print(content_S[1000])
 df_content = pd.DataFrame({'content_S': content_S})
 print(df_content.head())
@@ -70,7 +72,7 @@ plt.imshow(wordcloud)
 import jieba.analyse
 
 index = 2400
-print(df_news['content'][index])
+print(df_news['disease_desc'][index])
 content_S_str = "".join(content_S[index])
 print("  ".join(jieba.analyse.extract_tags(content_S_str, topK=5, withWeight=False)))
 
@@ -90,15 +92,19 @@ print(lda.print_topic(1, topn=5))
 for topic in lda.print_topics(num_topics=20, num_words=5):
     print(topic[1])
 
-df_train = pd.DataFrame({'contents_clean': contents_clean, 'label': df_news['category']})
+ssss = df_news['train_class']
+print(df_news['train_class'])
+
+df_train = pd.DataFrame({'contents_clean': contents_clean, 'label': train_class_S})
 print(df_train.tail())
 print(df_train.label.unique())
 
-label_mapping = {u"汽车": 1, u"财经": 2, u"科技": 3, u"健康": 4, u"体育": 5, u"教育": 6, u"文化": 7, u"军事": 8, u"娱乐": 9, u"时尚": 0}
-tmp = df_train['label']
-df_train['label'] = list(map(lambda x: label_mapping.get(x), df_train['label']))
+# label_mapping = {u"汽车": 1, u"财经": 2, u"科技": 3, u"健康": 4, u"体育": 5, u"教育": 6, u"文化": 7, u"军事": 8, u"娱乐": 9, u"时尚": 0}
+# tmp = df_train['label']
+# df_train['label'] = list(map(lambda x: label_mapping.get(x), df_train['label']))
 # df_train['label'] = df_train['label'].map(label_mapping)
 print(df_train.head())
+print(df_train['label'])
 
 from sklearn.model_selection import train_test_split
 
@@ -158,13 +164,21 @@ print(classifier.score(vectorizer.transform(test_words), y_test))
 
 # Tokenizing text
 count_vect = CountVectorizer()
-docs_new = ['体内 肝气 随着 春日 渐深 而 愈盛 在 清明 之际 达到 最旺 常言道 过犹不及 如果 肝气 过旺 会对 脾胃 产生 不良 影响 妨碍 食物 正常 消化 吸收，还可 造成 情绪 失调',
-            '由 德国人 设计 的 人类 第一艘 飞艇 首航 成功']
+docs_new = ['手指 出血 严重',
+            '胃疼 胃部 胀痛']
 # using classifier to predict
 predicted = classifier.predict(vectorizer.transform(docs_new))
 
+
+class_trainclass = pd.read_csv("class_trainclass_write.txt")
+trainclass_class_dict = {}
+trainclass_list = class_trainclass["trainclass"]
+class_train = class_trainclass["class"]
+for idx in range(trainclass_list.__len__()):
+    trainclass_class_dict[trainclass_list[idx]] = class_train[idx]
+
 for text, c in zip(docs_new, predicted):
-    for k, v in label_mapping.items():
+    for k, v in trainclass_class_dict.items():
         if c == v:
             print(k + "类==>  " + text)
 
