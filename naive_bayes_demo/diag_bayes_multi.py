@@ -164,7 +164,7 @@ print(classifier.score(vectorizer.transform(test_words), y_test))
 
 # Tokenizing text
 count_vect = CountVectorizer()
-docs_new = ['手指 出血 严重',
+docs_new = ['我 手指 磕破 出血',
             '胃疼 胃部 胀痛']
 # using classifier to predict
 predicted = classifier.predict(vectorizer.transform(docs_new))
@@ -175,11 +175,11 @@ trainclass_class_dict = {}
 trainclass_list = class_trainclass["trainclass"]
 class_train = class_trainclass["class"]
 for idx in range(trainclass_list.__len__()):
-    trainclass_class_dict[trainclass_list[idx]] = class_train[idx]
+    trainclass_class_dict[class_train[idx]] = trainclass_list[idx]
 
 for text, c in zip(docs_new, predicted):
     for k, v in trainclass_class_dict.items():
         if c == v:
-            print(k + "类==>  " + text)
+            print(str(k) + "类==>  " + text)
 
 rest = vectorizer.transform(words)
