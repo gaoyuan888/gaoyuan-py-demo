@@ -12,8 +12,31 @@ import jieba
 import pandas as pd
 
 diag_list = pd.read_csv('data/23728146.csv')
+diag_list = diag_list.dropna(subset=["reception_doctor_id", "disease_desc"])
 disease_desc_list = diag_list["disease_desc"]
+reception_doctorid_list = diag_list["reception_doctor_id"]
 
+# 疾病库
+disease_set = set(("关节炎",))
+# 医生：疾病字典
+doc_disease_dict = {}
+
+# 按类别：疾病 字典
+class_disease_dict = {}
+
+# write_ = codecs.open("sentence_similar_array.txt", 'w', encoding="utf8")
+for idx in range(disease_desc_list.__len__()):
+    disease_desc = disease_desc_list[idx]
+    disease_desc = re.sub("\t", "", disease_desc)
+    if disease_desc.startswith("线下确诊疾病为"):
+        d_l = disease_desc.split("；")[0].split("：")[1].split("、")
+        if doc_disease_dict.__contains__(reception_doctorid_list[idx]):
+            doc_disease_dict[reception_doctorid_list[idx]] += set(doc_disease_dict[reception_doctorid_list[idx]] + d_l)
+        for d in d_l:
+            disease_set.add(d)
+        print(d_l)
+
+print(disease_set)
 print(diag_list.shape)
 
 sss = jieba.cut("你好我好大家好", cut_all=True)
