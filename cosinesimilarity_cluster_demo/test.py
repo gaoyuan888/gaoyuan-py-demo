@@ -11,10 +11,12 @@ import json
 import jieba
 import pandas as pd
 
+sssss = int(125466.0)
+
 diag_list = pd.read_csv('data/23728146.csv')
 diag_list = diag_list.dropna(subset=["reception_doctor_id", "disease_desc"])
-disease_desc_list = diag_list["disease_desc"]
-reception_doctorid_list = diag_list["reception_doctor_id"]
+disease_desc_list = diag_list["disease_desc"].values
+reception_doctorid_list = diag_list["reception_doctor_id"].values
 
 # 疾病库
 disease_set = set(("关节炎",))
@@ -28,13 +30,42 @@ class_disease_dict = {}
 for idx in range(disease_desc_list.__len__()):
     disease_desc = disease_desc_list[idx]
     disease_desc = re.sub("\t", "", disease_desc)
-    if disease_desc.startswith("线下确诊疾病为"):
-        d_l = disease_desc.split("；")[0].split("：")[1].split("、")
-        if doc_disease_dict.__contains__(reception_doctorid_list[idx]):
-            doc_disease_dict[reception_doctorid_list[idx]] += set(doc_disease_dict[reception_doctorid_list[idx]] + d_l)
-        for d in d_l:
-            disease_set.add(d)
-        print(d_l)
+    if disease_desc.startswith("线下确诊疾病为："):
+        try:
+            d_l = disease_desc.split("；")[0].split("：")[1].split("、")
+            if doc_disease_dict.__contains__(reception_doctorid_list[idx]):
+                doc_disease_dict[reception_doctorid_list[idx]] = list(set(
+                    doc_disease_dict[reception_doctorid_list[idx]] + d_l))
+            else:
+                doc_disease_dict[reception_doctorid_list[idx]] = d_l
+
+            for d in d_l:
+                disease_set.add(d)
+            # print(d_l)
+        except IndexError:
+            pass
+
+docinfo_list = pd.read_csv("data/doctor.csv")
+doc_id = docinfo_list["doc_id"].values
+depart_name = docinfo_list["second_depart_name"].values
+docid_depart_dict = {}
+for idx in range(doc_id.__len__()):
+    docid_depart_dict[doc_id[idx]] = depart_name[idx]
+
+write_ = codecs.open("doctor_disease_write.txt", 'w', encoding="utf8")
+write_.writelines("doc_id,depart_name,disease_list\n")
+for k, v in doc_disease_dict.items():
+    try:
+        write_.writelines(str(k) + "," + docid_depart_dict[int(k)] + "," + str(v) + "\n")
+    except KeyError:
+        pass
+write_.close()
+
+write_ = codecs.open("disease_word_write.txt", 'w', encoding="utf8")
+for d_w in disease_set:
+    if d_w is not None and d_w != "":
+        write_.writelines(d_w + "\n")
+write_.close()
 
 print(disease_set)
 print(diag_list.shape)

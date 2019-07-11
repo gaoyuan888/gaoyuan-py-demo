@@ -61,6 +61,20 @@ class GoodAtCluster:
                                                                                                      self.doctor_id)
 
 
+def add_feature_word_jieba():
+    df_doctor_info = pd.read_csv('data/doctor.csv')
+    df_doctor_info = df_doctor_info.drop_duplicates()
+    df_doctor_info = df_doctor_info.loc[0:6000]  # 切片
+    second_depart_name_list = df_doctor_info['second_depart_name'].values
+    for depart_name in second_depart_name_list:
+        depart_name = re.sub(regstr, "", depart_name)
+        jieba.add_word(depart_name)
+
+    df_feature_word_list = pd.read_csv("disease_word_write.txt", index_col=False, sep="\t", quoting=3, names=['feature_word'], encoding='utf-8').values
+    for word in df_feature_word_list:
+        jieba.add_word(word[0])
+
+
 def print_similar_array():
     # 打印相似矩阵到文件
     similar_df = codecs.open("sentence_similar_array.txt", 'w', encoding="utf8")
@@ -273,7 +287,6 @@ def read_doctor_corpus():
     depart_name_list = []
     for depart_name in second_depart_name_list:
         depart_name = re.sub(regstr, "", depart_name)
-        jieba.add_word(depart_name)
         depart_name_list.append(depart_name)
     second_depart_name_list = np.array(depart_name_list)
 
@@ -353,6 +366,9 @@ if __name__ == '__main__':
     # step 1 读取停用词
     stop_words = read_stop_words()
     print('step 1 ->停用词读取完毕，共{n}个单词'.format(n=len(stop_words)))
+
+    # jieba 分词添加专业特征词语
+    add_feature_word_jieba()
 
     # step 2 读取语料
     print('step 2 ->读取医生擅长语料，准备聚类')
@@ -438,6 +454,8 @@ if __name__ == '__main__':
 
     print("step 15 ->按照上面统计结果，组装训练所需要的语料。生成文件：train_corpus_write.txt")
     assemble_train_corpus()
+
+    print("step 16 -> 按照购药开方问诊描述，提取疾病词语，生成")
 
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
