@@ -70,7 +70,8 @@ def add_feature_word_jieba():
         depart_name = re.sub(regstr, "", depart_name)
         jieba.add_word(depart_name)
 
-    df_feature_word_list = pd.read_csv("disease_word_write.txt", index_col=False, sep="\t", quoting=3, names=['feature_word'], encoding='utf-8').values
+    df_feature_word_list = pd.read_csv("disease_word_write.txt", index_col=False, sep="\t", quoting=3,
+                                       names=['feature_word'], encoding='utf-8').values
     for word in df_feature_word_list:
         jieba.add_word(word[0])
 
@@ -145,7 +146,7 @@ def print_goodat_cluster():
 
 
 # 打印出医生id和类别的结果  {176910113695:0,174910080032:1,}
-def print_docid_class_dict():
+def write_docid_class_dict():
     docid_class_write = codecs.open("docid_class_write.txt", 'w', encoding="utf8")
     docid_class_write.writelines("{")
     for goodat_cluster in goodat_cluster_list:
@@ -361,6 +362,62 @@ def write_cluster_process():
     process_record.close()
 
 
+def write_doc_disease():
+    diag_list = pd.read_csv('data/23728146.csv', usecols=['reception_doctor_id', 'disease_desc'])
+    diag_list = diag_list.dropna(subset=["reception_doctor_id", "disease_desc"])
+    disease_desc_list = diag_list["disease_desc"].values
+    reception_doctorid_list = diag_list["reception_doctor_id"].values
+
+    # 疾病库
+    disease_set = set(("关节炎",))
+    # 医生：疾病字典
+    doc_disease_dict = {}
+
+    # 按类别：疾病 字典
+    class_disease_dict = {}
+
+    # write_ = codecs.open("sentence_similar_array.txt", 'w', encoding="utf8")
+    for idx in range(disease_desc_list.__len__()):
+        disease_desc = disease_desc_list[idx]
+        disease_desc = re.sub("\t", "", disease_desc)
+        if disease_desc.startswith("线下确诊疾病为："):
+            try:
+                d_l = disease_desc.split("；")[0].split("：")[1].split("、")
+                if doc_disease_dict.__contains__(reception_doctorid_list[idx]):
+                    doc_disease_dict[reception_doctorid_list[idx]] = list(set(
+                        doc_disease_dict[reception_doctorid_list[idx]] + d_l))
+                else:
+                    doc_disease_dict[reception_doctorid_list[idx]] = d_l
+
+                for d in d_l:
+                    disease_set.add(d)
+                # print(d_l)
+            except IndexError:
+                pass
+
+    docinfo_list = pd.read_csv("data/doctor.csv")
+    doc_id = docinfo_list["doc_id"].values
+    depart_name = docinfo_list["second_depart_name"].values
+    docid_depart_dict = {}
+    for idx in range(doc_id.__len__()):
+        docid_depart_dict[doc_id[idx]] = depart_name[idx]
+
+    write_ = codecs.open("doctor_disease_write.txt", 'w', encoding="utf8")
+    write_.writelines("doc_id,depart_name,disease_list\n")
+    for k, v in doc_disease_dict.items():
+        try:
+            write_.writelines(str(k) + "," + docid_depart_dict[int(k)] + "," + str(v) + "\n")
+        except KeyError:
+            pass
+    write_.close()
+
+    write_ = codecs.open("disease_word_write.txt", 'w', encoding="utf8")
+    for d_w in disease_set:
+        if d_w is not None and d_w != "":
+            write_.writelines(d_w + "\n")
+    write_.close()
+
+
 if __name__ == '__main__':
     # 分词
     # step 1 读取停用词
@@ -443,7 +500,7 @@ if __name__ == '__main__':
     write_cluster_feature_words()
 
     print("step 12 ->按照医生id作为key,类别作为value组装字段,生成文件:docid_class_write.txt")
-    print_docid_class_dict()
+    write_docid_class_dict()
 
     print("step 13 ->将问诊信息按照上述聚类结果分类，整合训练语料，生成文件：diag_corpus_write.txt")
     # 按照聚类结果将diag.csv 问诊信息进行分类
@@ -455,7 +512,8 @@ if __name__ == '__main__':
     print("step 15 ->按照上面统计结果，组装训练所需要的语料。生成文件：train_corpus_write.txt")
     assemble_train_corpus()
 
-    print("step 16 -> 按照购药开方问诊描述，提取疾病词语，生成")
+    print("step 16 -> 按照购药开方问诊描述，提取疾病词语，生成【疾病名称库】，【医生-疾病库】")
+    write_doc_disease()
 
 # also can output sparse matrices
 # similarities_sparse = cosine_similarity(A_sparse, dense_output=False)
