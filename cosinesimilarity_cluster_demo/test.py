@@ -13,7 +13,7 @@ import pandas as pd
 
 sssss = int(125466.0)
 
-diag_list = pd.read_csv('data/23728146.csv')
+diag_list = pd.read_csv('data/23728146.csv', usecols=['reception_doctor_id', 'disease_desc'])
 diag_list = diag_list.dropna(subset=["reception_doctor_id", "disease_desc"])
 disease_desc_list = diag_list["disease_desc"].values
 reception_doctorid_list = diag_list["reception_doctor_id"].values
