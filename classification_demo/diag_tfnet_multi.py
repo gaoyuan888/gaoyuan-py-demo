@@ -50,15 +50,15 @@ model = utils.build_netword(catalogue=utils.MULTI_FLAG, dict=dict, embedding_siz
                             max_sequence_length=max_sequence_length, dense_size=target_size)
 
 # # 训练模型
-# model.fit(text_processed, target, batch_size=512, epochs=100, )
+model.fit(text_processed, target, batch_size=512, epochs=100, )
 # # 保存模型
-# model.save("health_and_tech_design.h5")
+model.save("health_and_tech_design.h5")
 
 # 加载预训练的模型
 model.load_weights("health_and_tech_design.h5")
 
 # 预测样本
-sen = "我手指磕破了出血"
+sen = "慢性肝炎"
 sen_prosessed = " ".join(jb.cut(sen, cut_all=True))
 sen_prosessed = vocab_processor.transform([sen_prosessed])
 sen_prosessed = np.array(list(sen_prosessed))
